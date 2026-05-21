@@ -42,6 +42,8 @@ group :development, :test do
 end
 
 gem "cassandra-driver", "~> 3.2"
+gem "sorted_set", "~> 1.0"
 gem "redis", "~> 5.4"
 gem "sidekiq", "~> 8.1"
 gem "dotenv-rails", "~> 3.2"
+gem "rspec-rails", "~> 6.0"
