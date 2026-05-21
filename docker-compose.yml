@@ -1,0 +1,14 @@
+services:
+  cassandra:
+    image: cassandra:4.1
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=clareo
+      - CASSANDRA_DC=dc1
+      - CASSANDRA_RACK=rack1
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
