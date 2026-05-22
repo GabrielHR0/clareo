@@ -69,6 +69,30 @@ docker-compose restart cassandra
 cqlsh -e "SELECT now() FROM system.local;"
 ```
 
+### Dev docker compose (Rails + Redis + Cassandra)
+**Antes (problemas)**
+- Rails caia ao reiniciar: gems nao estavam instaladas no volume.
+- Cassandra nao estava pronto ou keyspace inexistente.
+- Scripts com CRLF quebravam o shebang.
+
+**Depois (solucao aplicada)**
+- `Dockerfile.dev` para dev e compose com `bundle install` no startup.
+- Healthchecks e espera ativa para Cassandra/Redis.
+- `cassandra-init` cria o keyspace e `cassandra-data` persiste dados.
+
+**Comandos**
+```bash
+# Subir tudo do zero
+docker compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml up -d
+
+# Recriar so o Rails
+docker compose -f docker-compose.dev.yml up -d --force-recreate rails
+
+# Logs do Rails
+docker compose -f docker-compose.dev.yml logs -f rails
+```
+
 ---
 
 ## 📞 Contato & Comunidade

@@ -24,3 +24,4 @@ FileUtils.chdir APP_ROOT do
     exec "bin/dev"
   end
 end
+
