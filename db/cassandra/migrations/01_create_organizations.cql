@@ -1,4 +1,4 @@
-CREATE TABLE clareo.organizations (
+CREATE TABLE IF NOT EXISTS clareo.organizations (
     organization_id UUID PRIMARY KEY,
     name TEXT,
     cnpj TEXT,
@@ -10,8 +10,8 @@ CREATE TABLE clareo.organizations (
     api_key_hash TEXT
 );
 
-CREATE INDEX inx_cnpj
+CREATE INDEX IF NOT EXISTS inx_cnpj
 ON clareo.organizations (cnpj);
 
-CREATE INDEX inx_status
+CREATE INDEX IF NOT EXISTS inx_status
 ON clareo.organizations (status);
