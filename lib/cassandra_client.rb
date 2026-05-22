@@ -9,6 +9,36 @@ module CassandraClient
       @session ||= cluster.connect(keyspace)
     end
 
+    # Connect without keyspace (useful for creating keyspace)
+    def session_without_keyspace
+      @session_no_keyspace ||= cluster.connect
+    end
+
+    # Ensure keyspace exists with given replication map
+    def ensure_keyspace!(ks = keyspace, dc = ENV.fetch("CASSANDRA_DC", "datacenter1"), rf = 3)
+      cql = <<~CQL.strip
+        CREATE KEYSPACE IF NOT EXISTS #{ks}
+        WITH replication = {'class': 'NetworkTopologyStrategy', '#{dc}': #{rf}}
+      CQL
+      session_without_keyspace.execute(cql)
+      wait_for_keyspace!(ks)
+    end
+
+    def wait_for_keyspace!(ks = keyspace, timeout_seconds = 15)
+      deadline = Time.now + timeout_seconds
+
+      loop do
+        exists = session_without_keyspace.execute(
+          "SELECT keyspace_name FROM system_schema.keyspaces WHERE keyspace_name = '#{ks}'"
+        ).any?
+
+        return true if exists
+        raise "Keyspace '#{ks}' did not become visible in time" if Time.now > deadline
+
+        sleep 0.5
+      end
+    end
+
     private
 
     def cluster
