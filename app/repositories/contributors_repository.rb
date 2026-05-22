@@ -1,40 +1,43 @@
 require "securerandom"
 
-module OrganizationsRepository
+module ContributorsRepository
   extend self
 
   CREATE_CQL = <<~CQL
-    INSERT INTO clareo.organizations (organization_id, name, cnpj, status, contact_email, webhook_url, api_key_hash, created_at, updated_at)
-    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO clareo.contributors (contributor_id, name, email, cpf, phone, status, created_at, updated_at)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?)
   CQL
 
-  GET_CQL = "SELECT * FROM clareo.organizations WHERE organization_id = ?"
+  GET_CQL = "SELECT * FROM clareo.contributors WHERE contributor_id = ?"
 
   def prepare!
     return if @prepared
+
     @insert = CassandraClient.session.prepare(CREATE_CQL)
-    @get    = CassandraClient.session.prepare(GET_CQL)
+    @get = CassandraClient.session.prepare(GET_CQL)
     @prepared = true
   end
 
   def create(attrs)
     prepare!
-    id = normalize_uuid(attrs[:organization_id])
+    id = normalize_uuid(attrs[:contributor_id])
     now = Time.now
     status = attrs[:status] || "active"
 
-    CassandraClient.session.execute(@insert, arguments:
-      [
+    CassandraClient.session.execute(
+      @insert,
+      arguments: [
         id,
         attrs[:name],
-        attrs[:cnpj],
+        attrs[:email],
+        attrs[:cpf],
+        attrs[:phone],
         status,
-        attrs[:contact_email],
-        attrs[:webhook_url],
-        attrs[:api_key_hash],
         now,
         now
-      ], consistency: :quorum)
+      ],
+      consistency: :quorum
+    )
 
     id
   end
@@ -54,13 +57,12 @@ module OrganizationsRepository
 
   def row_to_hash(row)
     {
-      organization_id: row["organization_id"],
+      contributor_id: row["contributor_id"],
       name: row["name"],
-      cnpj: row["cnpj"],
+      email: row["email"],
+      cpf: row["cpf"],
+      phone: row["phone"],
       status: row["status"],
-      contact_email: row["contact_email"],
-      webhook_url: row["webhook_url"],
-      api_key_hash: row["api_key_hash"],
       created_at: row["created_at"],
       updated_at: row["updated_at"]
     }

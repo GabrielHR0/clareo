@@ -1,7 +1,6 @@
 require 'rails_helper'
 
 RSpec.describe "Organizations", type: :request do
-
   params = {
     organization: {
       name: "Test Organization",
@@ -16,8 +15,7 @@ RSpec.describe "Organizations", type: :request do
   describe "POST organizations/" do
     it "returns http success" do
       post "/organizations", params: params
-      expect(response).to have_http_status(:success)
+      expect(response).to have_http_status(:created)
     end
   end
-
 end
