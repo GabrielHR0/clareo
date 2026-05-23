@@ -11,50 +11,19 @@ services:
     environment:
       RAILS_ENV: development
       BUNDLE_PATH: /usr/local/bundle
+      CASSANDRA_CONTACT_POINTS: host.docker.internal
     depends_on:
       redis:
         condition: service_healthy
-      cassandra:
-        condition: service_healthy
-      cassandra-init:
-        condition: service_completed_successfully
     volumes:
       - .:/rails
       - bundle:/usr/local/bundle
     command: >
-      bash -lc "ruby -rsocket -e \"loop do; begin; TCPSocket.new('cassandra', 9042).close; break; rescue; sleep 1; end; end\" \
-      && ruby -rsocket -e \"loop do; begin; TCPSocket.new('redis', 6379).close; break; rescue; sleep 1; end; end\" \
+      bash -lc "ruby -rsocket -e \"loop do; begin; TCPSocket.new('redis', 6379).close; break; rescue; sleep 1; end; end\" \
       && bundle install \
       && rm -f tmp/pids/server.pid \
       && bin/rails server -b 0.0.0.0 -p 3000"
     restart: unless-stopped
-
-  cassandra:
-    image: cassandra:4.1
-    ports:
-      - "9042:9042"
-    environment:
-      - CASSANDRA_CLUSTER_NAME=clareo
-      - CASSANDRA_DC=${CASSANDRA_DC:-datacenter1}
-      - CASSANDRA_RACK=rack1
-    volumes:
-      - cassandra-data:/var/lib/cassandra
-    healthcheck:
-      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' > /dev/null 2>&1"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-
-  cassandra-init:
-    image: cassandra:4.1
-    depends_on:
-      cassandra:
-        condition: service_healthy
-    env_file:
-      - .env
-    command: >
-      bash -lc "/opt/cassandra/bin/cqlsh cassandra 9042 -e \"CREATE KEYSPACE IF NOT EXISTS ${CASSANDRA_KEYSPACE} WITH REPLICATION = {'class':'SimpleStrategy','replication_factor':1};\""
-    restart: "no"
 
   redis:
     image: redis:7
@@ -68,4 +37,3 @@ services:
 
 volumes:
   bundle:
-  cassandra-data:
