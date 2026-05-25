@@ -12,15 +12,18 @@ services:
       RAILS_ENV: development
       BUNDLE_PATH: /usr/local/bundle
       CASSANDRA_CONTACT_POINTS: host.docker.internal
+      KAFKA_BROKERS: kafka:9092
     depends_on:
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_started
     volumes:
       - .:/rails
       - bundle:/usr/local/bundle
+    entrypoint: ["/rails/bin/docker-entrypoint"]
     command: >
       bash -lc "ruby -rsocket -e \"loop do; begin; TCPSocket.new('redis', 6379).close; break; rescue; sleep 1; end; end\" \
-      && bundle install \
       && rm -f tmp/pids/server.pid \
       && bin/rails server -b 0.0.0.0 -p 3000"
     restart: unless-stopped
@@ -34,6 +37,28 @@ services:
       interval: 5s
       timeout: 3s
       retries: 12
+  # Use a single-image Kafka+Zookeeper for local development to avoid multi-service race issues
+  kafka:
+    image: lensesio/fast-data-dev:latest
+    environment:
+      ADV_HOST: kafka
+    ports:
+      - "2181:2181"
+      - "9092:9092"
+    # The fast-data-dev image includes Zookeeper + Kafka; no separate zookeeper service required
+
+  kafka-init:
+    image: lensesio/fast-data-dev:latest
+    env_file:
+      - .env
+    environment:
+      KAFKA_BROKERS: kafka:9092
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/sh","-lc"]
+    command: >
+      echo 'kafka-init: waiting for kafka...' && timeout=120; waited=0; until (echo > /dev/tcp/kafka/9092) >/dev/null 2>&1 || [ $$waited -ge $$timeout ]; do sleep 1; waited=$$((waited+1)); done; if [ $$waited -ge $$timeout ]; then echo 'kafka-init: kafka not reachable; exiting with error'; exit 1; fi; echo 'kafka-init: creating topics via kafka CLI'; for topic in donations.created donations.recurring.processed transactions.posted wallets.balance_changed floating.interest_applied credit.line_used credit.repayment audit.events; do /usr/local/bin/kafka-topics --bootstrap-server kafka:9092 --create --topic "$topic" --partitions 1 --replication-factor 1 >/dev/null 2>&1 && echo "Created $topic" || echo "Topic $topic exists or creation failed"; done
+    restart: 'no'
 
 volumes:
   bundle:

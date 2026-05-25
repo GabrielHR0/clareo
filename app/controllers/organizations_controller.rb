@@ -15,10 +15,9 @@ class OrganizationsController < ApplicationController
   end
 
   def create
-    attrs = organization_params.to_h.symbolize_keys
-    id = OrganizationsRepository.create(attrs)
+    result = CreateOrganizationService.call(organization_params.to_h.symbolize_keys)
 
-    render json: { organization_id: id }, status: :created
+    render json: result, status: :created, location: organization_url(result[:organization][:organization_id])
   rescue StandardError => e
     render json: { error: e.message }, status: :internal_server_error
   end

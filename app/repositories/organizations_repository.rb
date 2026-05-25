@@ -23,7 +23,7 @@ module OrganizationsRepository
     now = Time.now
     status = attrs[:status] || "active"
 
-    CassandraClient.session.execute(@insert, arguments:
+    result = CassandraClient.session.execute(@insert, arguments:
       [
         id,
         attrs[:name],
@@ -36,7 +36,7 @@ module OrganizationsRepository
         now
       ], consistency: :quorum)
 
-    id
+      id
   end
 
   def normalize_uuid(value)

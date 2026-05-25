@@ -12,6 +12,7 @@ Plataforma escalável de doações recorrentes para instituições religiosas e 
 - **[03_MODELO_DADOS.md](./03_MODELO_DADOS.md)** - Schemas Cassandra, tabelas, índices, estratégia de partição
 - **[04_PLANO_EXECUCAO.md](./04_PLANO_EXECUCAO.md)** - Fases do projeto, timeline, riscos e mitigações
 - **[05_KAFKA_STRATEGY.md](./05_KAFKA_STRATEGY.md)** - Event streaming, tópicos, consumer groups, garantias
+- Task de tópicos Kafka: `bundle exec rake kafka:create_topics`
 - **[06_MVP_ATOMICO.md](./06_MVP_ATOMICO.md)** - Tasks atômicas do MVP divididas para duas pessoas
 
 ## 📚 Conceitos-Chave
@@ -69,28 +70,20 @@ docker-compose restart cassandra
 cqlsh -e "SELECT now() FROM system.local;"
 ```
 
-### Dev docker compose (Rails + Redis + Cassandra)
-**Antes (problemas)**
-- Rails caia ao reiniciar: gems nao estavam instaladas no volume.
-- Cassandra nao estava pronto ou keyspace inexistente.
-- Scripts com CRLF quebravam o shebang.
-
-**Depois (solucao aplicada)**
-- `Dockerfile.dev` para dev e compose com `bundle install` no startup.
-- Healthchecks e espera ativa para Cassandra/Redis.
-- `cassandra-init` cria o keyspace e `cassandra-data` persiste dados.
-
-**Comandos**
+### Docker (dev + cluster)
+- Suba primeiro o `cassandra1` para virar seed.
+- Depois suba o cluster:
 ```bash
-# Subir tudo do zero
-docker compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.cluster.yml up -d
+```
+- No dev, o Rails usa o Cassandra do cluster via `host.docker.internal`:
+```bash
 docker compose -f docker-compose.dev.yml up -d
-
-# Recriar so o Rails
-docker compose -f docker-compose.dev.yml up -d --force-recreate rails
-
-# Logs do Rails
-docker compose -f docker-compose.dev.yml logs -f rails
+```
+- Se o cluster ficar inconsistente, recrie limpo:
+```bash
+docker compose -f docker-compose.cluster.yml down -v
+docker compose -f docker-compose.cluster.yml up -d
 ```
 
 ---

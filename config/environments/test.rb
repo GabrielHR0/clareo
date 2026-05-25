@@ -21,9 +21,17 @@ Rails.application.configure do
   # Show full error reports.
   config.consider_all_requests_local = true
   config.cache_store = :null_store
+  config.debug_exception_response_format = :api
+  config.hosts.clear
+  # Allow example.com (used by test default_url_options) to avoid HostAuthorization errors
+  config.hosts << "example.com"
+  # Allow any host pattern in tests to avoid host authorization issues from different test setups
+  config.hosts << /.*/
+  # Remove HostAuthorization middleware in tests to avoid intermittent blocked host errors
+  config.middleware.delete ActionDispatch::HostAuthorization
 
-  # Render exception templates for rescuable exceptions and raise for other exceptions.
-  config.action_dispatch.show_exceptions = :rescuable
+  # Let request specs raise the real exception so failures are visible in the terminal.
+  config.action_dispatch.show_exceptions = false
 
   # Disable request forgery protection in test environment.
   config.action_controller.allow_forgery_protection = false

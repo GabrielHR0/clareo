@@ -24,7 +24,7 @@ module ContributorsRepository
     now = Time.now
     status = attrs[:status] || "active"
 
-    CassandraClient.session.execute(
+    result = CassandraClient.session.execute(
       @insert,
       arguments: [
         id,
@@ -39,7 +39,7 @@ module ContributorsRepository
       consistency: :quorum
     )
 
-    id
+      id
   end
 
   def normalize_uuid(value)

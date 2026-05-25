@@ -1,27 +1,18 @@
-# frozen_string_literal: true
-
 class ContributorsController < ApplicationController
   def index
     render json: []
   end
 
-  def show
-    contributor = ContributorsRepository.find(params[:id])
+  def create
+    result = CreateContributorService.call(contributor_params.to_h.symbolize_keys)
 
-    if contributor
-      render json: contributor
-    else
-      head :not_found
-    end
+    render json: result, status: :created, location: contributor_url(result[:contributor][:contributor_id])
+  rescue StandardError => e
+    render json: { error: e.message }, status: :unprocessable_entity
   end
 
-  def create
-    attrs = contributor_params.to_h.symbolize_keys
-    id = ContributorsRepository.create(attrs)
+  def show
 
-    render json: { contributor_id: id }, status: :created
-  rescue StandardError => e
-    render json: { error: e.message }, status: :internal_server_error
   end
 
   private

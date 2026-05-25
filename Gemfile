@@ -39,11 +39,15 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+  gem "factory_bot_rails"
+  gem "faker"
 end
 
 gem "cassandra-driver", "~> 3.2"
 gem "sorted_set", "~> 1.0"
 gem "redis", "~> 5.4"
 gem "sidekiq", "~> 8.1"
+gem "sidekiq-cron", "~> 1.5"
 gem "dotenv-rails", "~> 3.2"
 gem "rspec-rails", "~> 6.0"
+gem "kafka"

@@ -8,11 +8,18 @@ services:
       - CASSANDRA_SEEDS=cassandra1
       - CASSANDRA_DC=datacenter1
       - CASSANDRA_RACK=rack1
+      - MAX_HEAP_SIZE=256M
+      - HEAP_NEWSIZE=64M
     ports:
       - "9042:9042"
       - "7000:7000"
       - "7001:7001"
       - "7199:7199"
+    healthcheck:
+      test: ["CMD-SHELL", "nodetool status | grep -q '^UN' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
 
   cassandra2:
     image: cassandra:4.1
@@ -22,8 +29,11 @@ services:
       - CASSANDRA_SEEDS=cassandra1
       - CASSANDRA_DC=datacenter1
       - CASSANDRA_RACK=rack1
+      - MAX_HEAP_SIZE=256M
+      - HEAP_NEWSIZE=64M
     depends_on:
-      - cassandra1
+      cassandra1:
+        condition: service_healthy
     ports:
       - "9043:9042"
       - "7002:7000"
@@ -38,8 +48,11 @@ services:
       - CASSANDRA_SEEDS=cassandra1
       - CASSANDRA_DC=datacenter1
       - CASSANDRA_RACK=rack1
+      - MAX_HEAP_SIZE=256M
+      - HEAP_NEWSIZE=64M
     depends_on:
-      - cassandra1
+      cassandra1:
+        condition: service_healthy
     ports:
       - "9044:9042"
       - "7004:7000"

@@ -131,6 +131,18 @@ Todos eventos de segurança/conformidade
 - Partição por `organization_id`
 - Retention: 7 anos (conformidade legal)
 
+## Como habilitar no ambiente local
+
+1. Defina `KAFKA_BROKERS` no `.env` ou `.env.development`.
+2. Suba um broker Kafka acessível em `kafka:9092` no `docker-compose.dev.yml`.
+3. Rode a task para criar os tópicos:
+
+```bash
+bundle exec rake kafka:create_topics
+```
+
+4. Se Kafka não estiver disponível, o sistema continua funcionando e os eventos são apenas logados.
+
 ---
 
 ## Consumer Groups
