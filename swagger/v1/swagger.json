@@ -1,0 +1,1857 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Clareo API",
+    "version": "1.0.0",
+    "description": "Clareo BaaS - Banking as a Service API Documentation. Complete API for managing transactions, wallets, organizations, and payment processing.",
+    "contact": {
+      "name": "Clareo Support",
+      "email": "support@clareo.io",
+      "url": "https://clareo.io"
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server",
+      "variables": {
+        "port": {
+          "default": "3000"
+        }
+      }
+    },
+    {
+      "url": "https://api.clareo.io",
+      "description": "Production server"
+    },
+    {
+      "url": "https://staging-api.clareo.io",
+      "description": "Staging server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "System health check endpoints"
+    },
+    {
+      "name": "Organizations",
+      "description": "Organization management"
+    },
+    {
+      "name": "Contributors",
+      "description": "Contributor (user) management"
+    },
+    {
+      "name": "Memberships",
+      "description": "Organization membership management"
+    },
+    {
+      "name": "Wallets",
+      "description": "Wallet and balance management"
+    },
+    {
+      "name": "Transactions",
+      "description": "Transaction creation and management"
+    },
+    {
+      "name": "Payment Methods",
+      "description": "Payment method management"
+    },
+    {
+      "name": "Credit Lines",
+      "description": "Credit line management and draws"
+    }
+  ],
+  "paths": {
+    "/up": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Rails Health Check",
+        "description": "Check if Rails application is responsive",
+        "operationId": "getRailsHealthCheck",
+        "responses": {
+          "200": {
+            "description": "System is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/cassandra": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Cassandra Health Check",
+        "description": "Check if Cassandra database is connected and healthy",
+        "operationId": "getCassandraHealthCheck",
+        "responses": {
+          "200": {
+            "description": "Cassandra is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "cassandra": {
+                      "type": "object",
+                      "properties": {
+                        "connected": {
+                          "type": "boolean"
+                        },
+                        "contact_points": {
+                          "type": "string"
+                        },
+                        "keyspace": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Cassandra is not healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "List all organizations",
+        "description": "Get a list of all organizations in the system",
+        "operationId": "listOrganizations",
+        "responses": {
+          "200": {
+            "description": "List of organizations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Organization"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Create a new organization",
+        "description": "Create a new organization in the system",
+        "operationId": "createOrganization",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Organization name"
+                  },
+                  "external_id": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "External identifier (optional)"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              "example": {
+                "name": "Acme Corporation",
+                "external_id": "ext_123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Organization created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                },
+                "example": {
+                  "id": "550e8400-e29b-41d4-a716-446655440000",
+                  "name": "Acme Corporation",
+                  "external_id": "ext_123",
+                  "created_at": "2026-05-25T10:30:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{id}": {
+      "get": {
+        "tags": [
+          "Organizations"
+        ],
+        "summary": "Get organization by ID",
+        "description": "Get detailed information about a specific organization",
+        "operationId": "getOrganization",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contributors": {
+      "get": {
+        "tags": [
+          "Contributors"
+        ],
+        "summary": "List all contributors",
+        "description": "Get a list of all contributors (users) in the system",
+        "operationId": "listContributors",
+        "responses": {
+          "200": {
+            "description": "List of contributors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Contributor"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Contributors"
+        ],
+        "summary": "Create a new contributor",
+        "description": "Create a new contributor (user) in the system",
+        "operationId": "createContributor",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "organization_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Organization ID"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Contributor email"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Contributor name"
+                  }
+                },
+                "required": [
+                  "organization_id",
+                  "email",
+                  "name"
+                ]
+              },
+              "example": {
+                "organization_id": "550e8400-e29b-41d4-a716-446655440000",
+                "email": "john@acme.com",
+                "name": "John Doe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contributor created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contributor"
+                },
+                "example": {
+                  "id": "6f47ac10-1f1f-597f-1f1f-8b1f7b0c0c0c",
+                  "organization_id": "550e8400-e29b-41d4-a716-446655440000",
+                  "email": "john@acme.com",
+                  "name": "John Doe",
+                  "created_at": "2026-05-25T10:30:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contributors/{id}": {
+      "get": {
+        "tags": [
+          "Contributors"
+        ],
+        "summary": "Get contributor by ID",
+        "description": "Get detailed information about a specific contributor",
+        "operationId": "getContributor",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Contributor ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contributor details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Contributor"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Contributor not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/memberships": {
+      "get": {
+        "tags": [
+          "Memberships"
+        ],
+        "summary": "List all memberships",
+        "description": "Get a list of all memberships (user-organization associations)",
+        "operationId": "listMemberships",
+        "responses": {
+          "200": {
+            "description": "List of memberships",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Membership"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Memberships"
+        ],
+        "summary": "Create a new membership",
+        "description": "Add a contributor to an organization with a specific role",
+        "operationId": "createMembership",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "organization_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Organization ID"
+                  },
+                  "contributor_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Contributor ID"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "user"
+                    ],
+                    "description": "Membership role"
+                  }
+                },
+                "required": [
+                  "organization_id",
+                  "contributor_id",
+                  "role"
+                ]
+              },
+              "example": {
+                "organization_id": "550e8400-e29b-41d4-a716-446655440000",
+                "contributor_id": "6f47ac10-1f1f-597f-1f1f-8b1f7b0c0c0c",
+                "role": "admin"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Membership created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Membership"
+                },
+                "example": {
+                  "id": "7a58ac10-1f1f-597f-1f1f-8b1f7b0c0c0d",
+                  "organization_id": "550e8400-e29b-41d4-a716-446655440000",
+                  "contributor_id": "6f47ac10-1f1f-597f-1f1f-8b1f7b0c0c0c",
+                  "role": "admin",
+                  "created_at": "2026-05-25T10:30:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/owners/{owner_type}/{owner_id}/wallet": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Get wallet for owner",
+        "description": "Retrieve wallet information including balance and version for an organization or contributor",
+        "operationId": "getWallet",
+        "parameters": [
+          {
+            "name": "owner_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "organization",
+                "contributor"
+              ]
+            },
+            "description": "Type of owner"
+          },
+          {
+            "name": "owner_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the owner (organization or contributor)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Wallet"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Wallet not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Create wallet for owner",
+        "description": "Initialize a new wallet for an organization or contributor",
+        "operationId": "createWallet",
+        "parameters": [
+          {
+            "name": "owner_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "organization",
+                "contributor"
+              ]
+            },
+            "description": "Type of owner"
+          },
+          {
+            "name": "owner_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the owner"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Wallet created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Wallet"
+                },
+                "example": {
+                  "owner_type": "organization",
+                  "owner_id": "550e8400-e29b-41d4-a716-446655440000",
+                  "balance_cents": 0,
+                  "available_cents": 0,
+                  "locked_cents": 0,
+                  "version": 1,
+                  "created_at": "2026-05-25T10:30:00Z",
+                  "updated_at": "2026-05-25T10:30:00Z"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Wallet already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/owners/{owner_type}/{owner_id}/transactions": {
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Create a transaction",
+        "description": "Create a new transaction (credit, debit, transfer, etc) using the centralized FakeBaasGateway",
+        "operationId": "createTransaction",
+        "parameters": [
+          {
+            "name": "owner_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "organization",
+                "contributor"
+              ]
+            },
+            "description": "Type of owner initiating the transaction"
+          },
+          {
+            "name": "owner_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the owner (source for debit/transfer)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transaction": {
+                    "type": "object",
+                    "properties": {
+                      "amount_cents": {
+                        "type": "integer",
+                        "description": "Amount in cents (e.g., 10000 = 100.00 BRL)"
+                      },
+                      "currency": {
+                        "type": "string",
+                        "default": "BRL",
+                        "description": "Currency code"
+                      },
+                      "transaction_type": {
+                        "type": "string",
+                        "enum": [
+                          "credit",
+                          "debit",
+                          "transfer",
+                          "external_in",
+                          "external_out",
+                          "withdrawal"
+                        ],
+                        "description": "Type of transaction"
+                      },
+                      "idempotency_key": {
+                        "type": "string",
+                        "description": "Unique key for idempotency (prevents duplicate processing on retries)"
+                      },
+                      "campaign_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Associated campaign ID (optional)"
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Additional metadata (optional)"
+                      },
+                      "dest_owner_type": {
+                        "type": "string",
+                        "enum": [
+                          "organization",
+                          "contributor"
+                        ],
+                        "nullable": true,
+                        "description": "Destination owner type (required for transfer)"
+                      },
+                      "dest_owner_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Destination owner ID (required for transfer)"
+                      }
+                    },
+                    "required": [
+                      "amount_cents",
+                      "transaction_type",
+                      "idempotency_key"
+                    ]
+                  }
+                },
+                "required": [
+                  "transaction"
+                ]
+              },
+              "examples": {
+                "credit": {
+                  "summary": "Credit transaction",
+                  "value": {
+                    "transaction": {
+                      "amount_cents": 100000,
+                      "currency": "BRL",
+                      "transaction_type": "credit",
+                      "idempotency_key": "credit-demo-123"
+                    }
+                  }
+                },
+                "transfer": {
+                  "summary": "Transfer transaction",
+                  "value": {
+                    "transaction": {
+                      "amount_cents": 50000,
+                      "currency": "BRL",
+                      "transaction_type": "transfer",
+                      "idempotency_key": "transfer-demo-456",
+                      "dest_owner_type": "organization",
+                      "dest_owner_id": "2d7e1533-83c2-4310-874b-c43cd0c727f1"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transaction created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "ok"
+                          ]
+                        },
+                        "transaction_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "provider_reference": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "ok"
+                          ]
+                        },
+                        "transaction_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "transfer_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "provider_reference": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Transaction already processed (idempotency)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "already_processed"
+                      ]
+                    },
+                    "transaction_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (insufficient funds, invalid parameters, etc)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "insufficient_funds"
+                          ]
+                        },
+                        "transaction_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      }
+                    },
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "List transactions for owner",
+        "description": "Get a paginated list of all transactions for an organization or contributor",
+        "operationId": "listTransactions",
+        "parameters": [
+          {
+            "name": "owner_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "organization",
+                "contributor"
+              ]
+            },
+            "description": "Type of owner"
+          },
+          {
+            "name": "owner_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the owner"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "description": "Maximum number of results to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Transaction"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/owners/{owner_type}/{owner_id}/transactions/{id}": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Get transaction details",
+        "description": "Retrieve detailed information about a specific transaction",
+        "operationId": "getTransaction",
+        "parameters": [
+          {
+            "name": "owner_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "organization",
+                "contributor"
+              ]
+            },
+            "description": "Type of owner"
+          },
+          {
+            "name": "owner_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the owner"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Transaction ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transaction"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{campaign_id}/transactions": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "List transactions for campaign",
+        "description": "Get a paginated list of all transactions associated with a specific campaign",
+        "operationId": "listCampaignTransactions",
+        "parameters": [
+          {
+            "name": "campaign_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Campaign ID"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "description": "Maximum number of results to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of campaign transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Transaction"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/owners/{owner_type}/{owner_id}/payment_methods": {
+      "post": {
+        "tags": [
+          "Payment Methods"
+        ],
+        "summary": "Create a payment method",
+        "description": "Add a new payment method (credit card, bank account, etc) for an owner",
+        "operationId": "createPaymentMethod",
+        "parameters": [
+          {
+            "name": "owner_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "organization",
+                "contributor"
+              ]
+            },
+            "description": "Type of owner"
+          },
+          {
+            "name": "owner_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "ID of the owner"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payment_type": {
+                    "type": "string",
+                    "enum": [
+                      "credit_card",
+                      "bank_transfer",
+                      "pix"
+                    ],
+                    "description": "Type of payment method"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "description": "Payment method reference (card token, account number, PIX key, etc)"
+                  },
+                  "is_default": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Mark as default payment method"
+                  }
+                },
+                "required": [
+                  "payment_type",
+                  "reference"
+                ]
+              },
+              "example": {
+                "payment_type": "credit_card",
+                "reference": "tok_visa_4242",
+                "is_default": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payment method created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethod"
+                },
+                "example": {
+                  "payment_method_id": "5d8ac20-1f1f-597f-1f1f-8b1f7b0c0c10",
+                  "owner_type": "organization",
+                  "owner_id": "550e8400-e29b-41d4-a716-446655440000",
+                  "payment_type": "credit_card",
+                  "reference": "tok_visa_4242",
+                  "is_default": true,
+                  "created_at": "2026-05-25T10:30:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payment type or parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit_lines": {
+      "get": {
+        "tags": [
+          "Credit Lines"
+        ],
+        "summary": "List all credit lines",
+        "description": "Get a list of all credit lines in the system",
+        "operationId": "listCreditLines",
+        "responses": {
+          "200": {
+            "description": "List of credit lines",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CreditLine"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Credit Lines"
+        ],
+        "summary": "Create a credit line",
+        "description": "Create a new credit line for an organization or contributor",
+        "operationId": "createCreditLine",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "owner_type": {
+                    "type": "string",
+                    "enum": [
+                      "organization",
+                      "contributor"
+                    ],
+                    "description": "Owner type"
+                  },
+                  "owner_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Owner ID"
+                  },
+                  "limit_cents": {
+                    "type": "integer",
+                    "description": "Credit limit in cents"
+                  }
+                },
+                "required": [
+                  "owner_type",
+                  "owner_id",
+                  "limit_cents"
+                ]
+              },
+              "example": {
+                "owner_type": "organization",
+                "owner_id": "550e8400-e29b-41d4-a716-446655440000",
+                "limit_cents": 1000000
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Credit line created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditLine"
+                },
+                "example": {
+                  "credit_line_id": "6e9bc30-1f1f-597f-1f1f-8b1f7b0c0c11",
+                  "owner_type": "organization",
+                  "owner_id": "550e8400-e29b-41d4-a716-446655440000",
+                  "limit_cents": 1000000,
+                  "available_cents": 1000000,
+                  "created_at": "2026-05-25T10:30:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit_lines/{id}": {
+      "get": {
+        "tags": [
+          "Credit Lines"
+        ],
+        "summary": "Get credit line by ID",
+        "description": "Retrieve detailed information about a specific credit line",
+        "operationId": "getCreditLine",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Credit line ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Credit line details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditLine"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Credit line not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credit_lines/{id}/use": {
+      "post": {
+        "tags": [
+          "Credit Lines"
+        ],
+        "summary": "Use credit line (draw on credit)",
+        "description": "Draw funds from an available credit line",
+        "operationId": "useCreditLine",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Credit line ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount_cents": {
+                    "type": "integer",
+                    "description": "Amount to draw in cents"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Reference for this draw (optional)"
+                  }
+                },
+                "required": [
+                  "amount_cents"
+                ]
+              },
+              "example": {
+                "amount_cents": 100000,
+                "reference": "usage-123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Credit drawn successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "credit_line_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "available_cents": {
+                      "type": "integer"
+                    },
+                    "amount_drawn_cents": {
+                      "type": "integer"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Insufficient available credit or invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "string"
+                        },
+                        "available_cents": {
+                          "type": "integer"
+                        },
+                        "requested_cents": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Credit line not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Organization UUID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Organization name"
+          },
+          "external_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "External identifier for integration"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "example": {
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "name": "Acme Corporation",
+          "external_id": "ext_123",
+          "created_at": "2026-05-25T10:30:00Z"
+        }
+      },
+      "Contributor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Contributor UUID"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Organization ID"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Contributor email"
+          },
+          "name": {
+            "type": "string",
+            "description": "Contributor name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "email"
+        ],
+        "example": {
+          "id": "6f47ac10-1f1f-597f-1f1f-8b1f7b0c0c0c",
+          "organization_id": "550e8400-e29b-41d4-a716-446655440000",
+          "email": "john@acme.com",
+          "name": "John Doe",
+          "created_at": "2026-05-25T10:30:00Z"
+        }
+      },
+      "Membership": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Membership UUID"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Organization ID"
+          },
+          "contributor_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Contributor ID"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "user"
+            ],
+            "description": "Role in organization"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "contributor_id",
+          "role"
+        ],
+        "example": {
+          "id": "7a58ac10-1f1f-597f-1f1f-8b1f7b0c0c0d",
+          "organization_id": "550e8400-e29b-41d4-a716-446655440000",
+          "contributor_id": "6f47ac10-1f1f-597f-1f1f-8b1f7b0c0c0c",
+          "role": "admin",
+          "created_at": "2026-05-25T10:30:00Z"
+        }
+      },
+      "Wallet": {
+        "type": "object",
+        "properties": {
+          "owner_type": {
+            "type": "string",
+            "enum": [
+              "organization",
+              "contributor"
+            ],
+            "description": "Owner type"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Owner UUID"
+          },
+          "balance_cents": {
+            "type": "integer",
+            "description": "Total balance in cents"
+          },
+          "available_cents": {
+            "type": "integer",
+            "description": "Available balance in cents (total - locked)"
+          },
+          "locked_cents": {
+            "type": "integer",
+            "description": "Locked balance in cents (holds, pending operations)"
+          },
+          "version": {
+            "type": "integer",
+            "description": "Version number for optimistic locking"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
+        },
+        "required": [
+          "owner_type",
+          "owner_id",
+          "balance_cents"
+        ],
+        "example": {
+          "owner_type": "organization",
+          "owner_id": "550e8400-e29b-41d4-a716-446655440000",
+          "balance_cents": 0,
+          "available_cents": 0,
+          "locked_cents": 0,
+          "version": 1,
+          "created_at": "2026-05-25T10:30:00Z",
+          "updated_at": "2026-05-25T10:30:00Z"
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Transaction UUID"
+          },
+          "owner_type": {
+            "type": "string",
+            "enum": [
+              "organization",
+              "contributor"
+            ],
+            "description": "Owner type (source for debit/transfer)"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Owner UUID"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "description": "Transaction amount in cents"
+          },
+          "currency": {
+            "type": "string",
+            "default": "BRL",
+            "description": "Currency code"
+          },
+          "transaction_type": {
+            "type": "string",
+            "enum": [
+              "credit",
+              "debit",
+              "transfer",
+              "external_in",
+              "external_out",
+              "withdrawal"
+            ],
+            "description": "Type of transaction"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "authorized",
+              "captured",
+              "refunded",
+              "failed",
+              "reversed"
+            ],
+            "description": "Transaction status"
+          },
+          "campaign_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Associated campaign ID"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "description": "Idempotency key"
+          },
+          "external_reference": {
+            "type": "string",
+            "nullable": true,
+            "description": "Provider reference from FakeBaasGateway"
+          },
+          "metadata": {
+            "type": "object",
+            "nullable": true,
+            "description": "Additional metadata"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          }
+        },
+        "required": [
+          "transaction_id",
+          "owner_type",
+          "owner_id",
+          "amount_cents",
+          "transaction_type",
+          "status"
+        ],
+        "example": {
+          "owner_type": "organization",
+          "owner_id": "550e8400-e29b-41d4-a716-446655440000",
+          "transaction_id": "8b69bd10-1f1f-597f-1f1f-8b1f7b0c0c0e",
+          "created_at": "2026-05-25T14:30:00Z",
+          "amount_cents": 100000,
+          "currency": "BRL",
+          "transaction_type": "credit",
+          "status": "captured",
+          "campaign_id": null,
+          "idempotency_key": "credit-demo-123",
+          "external_reference": "fake_b9c57887-ab58-461c-bbf0-688bc9125eb4",
+          "metadata": null
+        }
+      },
+      "PaymentMethod": {
+        "type": "object",
+        "properties": {
+          "payment_method_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Payment method UUID"
+          },
+          "owner_type": {
+            "type": "string",
+            "enum": [
+              "organization",
+              "contributor"
+            ],
+            "description": "Owner type"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Owner UUID"
+          },
+          "payment_type": {
+            "type": "string",
+            "enum": [
+              "credit_card",
+              "bank_transfer",
+              "pix"
+            ],
+            "description": "Payment method type"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Payment method reference (token, account, PIX key)"
+          },
+          "is_default": {
+            "type": "boolean",
+            "description": "Is default payment method"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          }
+        },
+        "required": [
+          "payment_method_id",
+          "owner_type",
+          "owner_id",
+          "payment_type"
+        ],
+        "example": {
+          "payment_method_id": "5d8ac20-1f1f-597f-1f1f-8b1f7b0c0c10",
+          "owner_type": "organization",
+          "owner_id": "550e8400-e29b-41d4-a716-446655440000",
+          "payment_type": "credit_card",
+          "reference": "tok_visa_4242",
+          "is_default": true,
+          "created_at": "2026-05-25T10:30:00Z"
+        }
+      },
+      "CreditLine": {
+        "type": "object",
+        "properties": {
+          "credit_line_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Credit line UUID"
+          },
+          "owner_type": {
+            "type": "string",
+            "enum": [
+              "organization",
+              "contributor"
+            ],
+            "description": "Owner type"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Owner UUID"
+          },
+          "limit_cents": {
+            "type": "integer",
+            "description": "Credit limit in cents"
+          },
+          "available_cents": {
+            "type": "integer",
+            "description": "Available credit in cents"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          }
+        },
+        "required": [
+          "credit_line_id",
+          "owner_type",
+          "owner_id",
+          "limit_cents"
+        ],
+        "example": {
+          "credit_line_id": "6e9bc30-1f1f-597f-1f1f-8b1f7b0c0c11",
+          "owner_type": "organization",
+          "owner_id": "550e8400-e29b-41d4-a716-446655440000",
+          "limit_cents": 1000000,
+          "available_cents": 1000000,
+          "created_at": "2026-05-25T10:30:00Z"
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API Key for authentication"
+      },
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token authentication"
+      }
+    }
+  }
+}

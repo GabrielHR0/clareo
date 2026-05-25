@@ -41,6 +41,14 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
   gem "factory_bot_rails"
   gem "faker"
+  
+  # API Documentation with OpenAPI/Swagger
+  gem "rswag-api"
+  gem "rswag-ui"
+end
+
+group :test do
+  gem "rswag-specs"
 end
 
 gem "cassandra-driver", "~> 3.2"

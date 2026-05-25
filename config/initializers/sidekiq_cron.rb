@@ -8,8 +8,8 @@ unless defined?(Rails) && Rails.env.test?
           'class' => 'CreditRepaymentWorker',
           'cron' => '*/5 * * * *',
           'description' => 'Apply pending donations to credit lines every 5 minutes'
-        }
-        , 'recurring_charge_worker' => {
+        },
+        'recurring_charge_worker' => {
           'class' => 'RecurringChargeWorker',
           'cron' => '0 2 * * *',
           'description' => 'Process recurring donations daily at 02:00'
