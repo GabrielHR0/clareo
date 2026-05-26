@@ -1,14 +1,81 @@
+version: "3.8"
+
 services:
   cassandra:
     image: cassandra:4.1
-    ports:
-      - "9042:9042"
     environment:
       - CASSANDRA_CLUSTER_NAME=clareo
-      - CASSANDRA_DC=dc1
+      - CASSANDRA_DC=datacenter1
       - CASSANDRA_RACK=rack1
+      - CASSANDRA_SEEDS=cassandra
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+    # expose makes the port available to other containers on the network but does not publish it to the host
+    expose:
+      - "9042"
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "cqlsh -e 'describe cluster' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   redis:
     image: redis:7
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  rails:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /rails
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: development
+      BUNDLE_PATH: /usr/local/bundle
+      CASSANDRA_CONTACT_POINTS: cassandra
+      CASSANDRA_PORT: "9042"
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - .:/rails
+      - bundle:/usr/local/bundle
+    command: >
+      bash -lc "ruby -rsocket -e \"loop do; begin; TCPSocket.new('redis', 6379).close; break; rescue; sleep 1; end; end\" \
+      && bundle install \
+      && rm -f tmp/pids/server.pid \
+      && bin/rails server -b 0.0.0.0 -p 3000"
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.25-alpine
+    depends_on:
+      - rails
     ports:
-      - "6379:6379"
+      - "3000:80" # map host:container (host 3000 -> nginx 80) to avoid needing root for 80
+    volumes:
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+
+volumes:
+  cassandra-data:
+  redis-data:
+  bundle:
+
+# Usage notes:
+# - This compose centralizes Cassandra, Redis, Rails and Nginx.
+# - To scale rails or cassandra locally (demo):
+#     docker-compose up -d --scale rails=3 --scale cassandra=3
+#   Warning: scaling cassandra in docker-compose requires careful seed configuration; for reliable multi-node Cassandra prefer k8s/statefulset.

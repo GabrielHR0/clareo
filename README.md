@@ -1,24 +1,45 @@
-# README
+# Clareo
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+Stack: Rails 8 + Cassandra 4.1 + Redis + Nginx + Prometheus/Grafana
+Autoscaling: Rails via HPA nativo + Cassandra via custom autoscaler
 
-Things you may want to cover:
+---
 
-* Ruby version
+## Deploy no k3s
 
-* System dependencies
+```bash
+# Script completo (build + import + apply)
+./scripts/deploy_k3s.sh
 
-* Configuration
+# Ou manualmente, passo a passo
+kubectl apply -f k8s/cassandra-statefulset.yml
+kubectl apply -f k8s/redis-deployment.yml
+kubectl apply -f k8s/rails-deployment.yml
+kubectl apply -f k8s/nginx-deployment.yml
+kubectl apply -f k8s/cassandra-autoscaler.yaml
+```
 
-* Database creation
+## Documentação completa
 
-* Database initialization
+→ [INSTRUCTIONS.md](INSTRUCTIONS.md)
 
-* How to run the test suite
+## Desenvolvimento local (sem k3s)
 
-* Services (job queues, cache servers, search engines, etc.)
+```bash
+docker compose up -d
+```
 
-* Deployment instructions
+## Arquitetura
 
-* ...
+| Serviço | Tipo | Réplicas base | Autoscaling |
+|---------|------|---------------|-------------|
+| Rails | Deployment | 3 | HPA (CPU > 50%, 1..10) |
+| Cassandra | StatefulSet | 2 | Custom (CPU > 60%, 2..5) |
+| Redis | Deployment | 1 | - |
+| Nginx | Deployment (LoadBalancer) | 1 | - |
+
+## Pré-requisitos
+
+- k3s (`curl -sfL https://get.k3s.io | sh -`)
+- Docker
+- Git
