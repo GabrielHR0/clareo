@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cassandra-autoscaler
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cassandra-autoscaler
+rules:
+  - apiGroups: ["apps"]
+    resources: ["statefulsets", "statefulsets/scale"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cassandra-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cassandra-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: cassandra-autoscaler
+    namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cassandra-autoscaler
+  namespace: default
+  labels:
+    app: cassandra-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cassandra-autoscaler
+  template:
+    metadata:
+      labels:
+        app: cassandra-autoscaler
+    spec:
+      serviceAccountName: cassandra-autoscaler
+      containers:
+        - name: autoscaler
+          image: docker.io/bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              NAMESPACE="default"
+              STATEFULSET="cassandra"
+              SELECTOR="app=cassandra"
+              MIN_REPLICAS=2
+              MAX_REPLICAS=5
+              SCALE_UP_THRESHOLD=60
+              SCALE_DOWN_THRESHOLD=30
+              CHECK_INTERVAL=30
+
+              echo "Cassandra Autoscaler started"
+              echo "  StatefulSet: ${NAMESPACE}/${STATEFULSET}"
+              echo "  Min: ${MIN_REPLICAS}  Max: ${MAX_REPLICAS}"
+              echo "  Scale up > ${SCALE_UP_THRESHOLD}%  Scale down < ${SCALE_DOWN_THRESHOLD}%"
+              echo "  Check interval: ${CHECK_INTERVAL}s"
+
+              while true; do
+                CURRENT=$(kubectl get statefulset -n ${NAMESPACE} ${STATEFULSET} -o jsonpath='{.spec.replicas}')
+                TOTAL_USAGE=0
+                TOTAL_REQUEST=0
+                COUNT=0
+
+                for pod in $(kubectl get pods -n ${NAMESPACE} -l ${SELECTOR} -o jsonpath='{.items[*].metadata.name}'); do
+                  USAGE=$(kubectl top pod -n ${NAMESPACE} ${pod} --no-headers 2>/dev/null | awk '{print $2}' | sed 's/m//')
+                  REQ=$(kubectl get pod -n ${NAMESPACE} ${pod} -o jsonpath='{.spec.containers[0].resources.requests.cpu}' | sed 's/m//')
+
+                  if [ -n "${USAGE}" ] && [ "${USAGE}" != "<unknown>" ] && [ -n "${REQ}" ] && [ "${REQ}" != "" ]; then
+                    TOTAL_USAGE=$((TOTAL_USAGE + USAGE))
+                    TOTAL_REQUEST=$((TOTAL_REQUEST + REQ))
+                    COUNT=$((COUNT + 1))
+                  fi
+                done
+
+                if [ "${COUNT}" -gt 0 ] && [ "${TOTAL_REQUEST}" -gt 0 ]; then
+                  AVG_PCT=$((TOTAL_USAGE * 100 / TOTAL_REQUEST))
+
+                  if [ "${AVG_PCT}" -gt "${SCALE_UP_THRESHOLD}" ] && [ "${CURRENT}" -lt "${MAX_REPLICAS}" ]; then
+                    NEW=$((CURRENT + 1))
+                    kubectl scale statefulset -n ${NAMESPACE} ${STATEFULSET} --replicas=${NEW}
+                    echo "$(date -u +%H:%M:%S) SCALED UP: ${CURRENT} -> ${NEW} (CPU ${AVG_PCT}% of request)"
+                  elif [ "${AVG_PCT}" -lt "${SCALE_DOWN_THRESHOLD}" ] && [ "${CURRENT}" -gt "${MIN_REPLICAS}" ]; then
+                    NEW=$((CURRENT - 1))
+                    kubectl scale statefulset -n ${NAMESPACE} ${STATEFULSET} --replicas=${NEW}
+                    echo "$(date -u +%H:%M:%S) SCALED DOWN: ${CURRENT} -> ${NEW} (CPU ${AVG_PCT}% of request)"
+                  else
+                    echo "$(date -u +%H:%M:%S) NO ACTION: replicas=${CURRENT}, avg CPU ${AVG_PCT}% (thresholds: up>${SCALE_UP_THRESHOLD}% down<${SCALE_DOWN_THRESHOLD}%)"
+                  fi
+                else
+                  echo "$(date -u +%H:%M:%S) WAITING: no metrics data yet (count=${COUNT} request=${TOTAL_REQUEST})"
+                fi
+
+                sleep ${CHECK_INTERVAL}
+              done
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"

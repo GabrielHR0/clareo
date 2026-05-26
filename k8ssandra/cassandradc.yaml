@@ -1,0 +1,28 @@
+++
+apiVersion: cassandra.datastax.com/v1alpha1
+kind: CassandraDatacenter
+metadata:
+  name: dc1
+  namespace: k8ssandra
+spec:
+  clusterName: clareo-dc
+  serverVersion: "4.0.6"
+  size: 3
+  storageConfig:
+    cassandraDataVolumeClaimSpec:
+      storageClassName: local-path
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+  datacenterOptions:
+    # Optional, tune for demo
+    preferIPv6: false
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1024Mi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
