@@ -42,6 +42,8 @@ module CampaignsRepository
         now
       ], consistency: :quorum)
 
+    CampaignsByIdRepository.insert(campaign_id: id, organization_id: org_id, name: attrs[:name])
+
     { campaign_id: id, organization_id: org_id }
   end
 

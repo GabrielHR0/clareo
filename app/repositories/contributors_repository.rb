@@ -9,6 +9,7 @@ module ContributorsRepository
   CQL
 
   GET_CQL = "SELECT * FROM clareo.contributors WHERE contributor_id = ?"
+  GET_BY_EMAIL_CQL = "SELECT * FROM clareo.contributors WHERE email = ?"
   ALL_CQL = "SELECT * FROM clareo.contributors LIMIT ?"
 
   def prepare!
@@ -16,6 +17,7 @@ module ContributorsRepository
 
     @insert = CassandraClient.session.prepare(CREATE_CQL)
     @get = CassandraClient.session.prepare(GET_CQL)
+    @get_by_email = CassandraClient.session.prepare(GET_BY_EMAIL_CQL)
     @all = CassandraClient.session.prepare(ALL_CQL)
     @prepared = true
   end
@@ -61,11 +63,17 @@ module ContributorsRepository
     row && row_to_hash(row)
   end
 
+  def find_by_email(email)
+    prepare!
+    row = CassandraClient.session.execute(@get_by_email, arguments: [email], consistency: :quorum).first
+    row && row_to_hash(row)
+  end
+
   private
 
   def row_to_hash(row)
     {
-      contributor_id: row["contributor_id"],
+      contributor_id: row["contributor_id"].to_s,
       name: row["name"],
       email: row["email"],
       cpf: row["cpf"],
