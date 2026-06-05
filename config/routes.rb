@@ -12,7 +12,9 @@ Rails.application.routes.draw do
   get "health/cassandra" => "health#cassandra", as: :cassandra_health_check
 
   scope "/api/v1" do
-    resources :organizations, only: [ :create, :show, :index ]
+    resources :organizations, only: [ :create, :show, :index ] do
+      resources :campaigns, only: [ :create, :show, :index ]
+    end
     resources :contributors, only: [ :create, :show, :index ]
     resources :memberships, only: [ :create, :index ]
     get "/owners/:owner_type/:owner_id/wallet", to: "wallets#show", as: :api_v1_owner_wallet
@@ -26,7 +28,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :organizations, only: [ :create, :show, :index ]
+  resources :organizations, only: [ :create, :show, :index ] do
+    resources :campaigns, only: [ :create, :show, :index ]
+  end
   resources :contributors, only: [ :create, :show, :index ]
   resources :memberships, only: [ :create, :index ]
   get "/owners/:owner_type/:owner_id/wallet", to: "wallets#show", as: :owner_wallet
