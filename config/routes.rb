@@ -16,7 +16,9 @@ Rails.application.routes.draw do
     resources :organizations, only: [ :create, :show, :index ] do
       resources :campaigns, only: [ :create, :show, :index ]
     end
-    resources :contributors, only: [ :create, :show, :index ]
+    resources :contributors, only: [ :create, :show, :index ] do
+      resources :recurring_donations, only: [ :create, :index, :update, :destroy ], controller: "recurring_donations"
+    end
     resources :memberships, only: [ :create, :index ]
     get "/owners/:owner_type/:owner_id/wallet", to: "wallets#show", as: :api_v1_owner_wallet
     post "/owners/:owner_type/:owner_id/transactions", to: "transactions#create", as: :api_v1_owner_transactions
@@ -32,7 +34,9 @@ Rails.application.routes.draw do
   resources :organizations, only: [ :create, :show, :index ] do
     resources :campaigns, only: [ :create, :show, :index ]
   end
-  resources :contributors, only: [ :create, :show, :index ]
+  resources :contributors, only: [ :create, :show, :index ] do
+    resources :recurring_donations, only: [ :create, :index, :update, :destroy ], controller: "recurring_donations"
+  end
   resources :memberships, only: [ :create, :index ]
   get "/owners/:owner_type/:owner_id/wallet", to: "wallets#show", as: :owner_wallet
   post "/owners/:owner_type/:owner_id/transactions", to: "transactions#create", as: :owner_transactions
