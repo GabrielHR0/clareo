@@ -13,8 +13,15 @@ Rails.application.routes.draw do
 
   scope "/api/v1" do
     post "/public/checkout", to: "checkout#create", as: :api_v1_public_checkout
+    get "/public/campaigns/:campaign_id/accountability", to: "public_accountability#show", as: :api_v1_public_accountability
     resources :organizations, only: [ :create, :show, :index ] do
-      resources :campaigns, only: [ :create, :show, :index ]
+      resources :campaigns, only: [ :create, :show, :index ] do
+        resources :expenses, controller: "expenses" do
+          resources :attachments, only: [:create, :destroy], controller: "expense_attachments" do
+            get :download, on: :member
+          end
+        end
+      end
     end
     resources :contributors, only: [ :create, :show, :index ] do
       resources :recurring_donations, only: [ :create, :index, :update, :destroy ], controller: "recurring_donations"
@@ -32,7 +39,13 @@ Rails.application.routes.draw do
   end
 
   resources :organizations, only: [ :create, :show, :index ] do
-    resources :campaigns, only: [ :create, :show, :index ]
+    resources :campaigns, only: [ :create, :show, :index ] do
+      resources :expenses, controller: "expenses" do
+        resources :attachments, only: [:create, :destroy], controller: "expense_attachments" do
+          get :download, on: :member
+        end
+      end
+    end
   end
   resources :contributors, only: [ :create, :show, :index ] do
     resources :recurring_donations, only: [ :create, :index, :update, :destroy ], controller: "recurring_donations"
