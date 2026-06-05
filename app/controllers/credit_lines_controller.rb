@@ -18,7 +18,7 @@ class CreditLinesController < ApplicationController
     credit = CreditService.create_line(
       organization_id: attrs[:organization_id],
       limit_cents: attrs[:limit_cents].to_i,
-      annual_rate: attrs[:annual_rate]
+      annual_rate: attrs[:annual_rate] ? BigDecimal(attrs[:annual_rate].to_s) : nil
     )
     render json: credit, status: :created
   end
