@@ -2,7 +2,7 @@ class PaymentMethodsRepository
   INSERT_CQL = "INSERT INTO clareo.payment_methods (owner_type, owner_id, method_id, method_type, details, is_default, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
   SELECT_DEFAULT_CQL = "SELECT * FROM clareo.payment_methods WHERE owner_type = ? AND owner_id = ? AND is_default = true ALLOW FILTERING"
 
-  def initialize(session = CassandraCluster.instance)
+  def initialize(session = CassandraClient.session_without_keyspace)
     @session = session
   end
 
@@ -22,6 +22,7 @@ class PaymentMethodsRepository
   private
 
   def normalize_uuid(v)
-    v.is_a?(String) ? v : v.to_s
+    return v if v.is_a?(Cassandra::Uuid)
+    Cassandra::Uuid.new(v) if v
   end
 end
