@@ -1,6 +1,7 @@
 class OrganizationsController < ApplicationController
   def index
-    render json: []
+    organizations = OrganizationsRepository.all
+    render json: organizations
   end
 
   def show
