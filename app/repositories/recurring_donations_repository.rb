@@ -2,7 +2,7 @@ class RecurringDonationsRepository
   SELECT_DUE = "SELECT * FROM clareo.recurring_donations WHERE organization_id = ? AND next_charge_date <= ? LIMIT ?"
   UPDATE_NEXT = "UPDATE clareo.recurring_donations SET next_charge_date = ? WHERE organization_id = ? AND contributor_id = ? AND recurring_id = ?"
 
-  def initialize(session = CassandraCluster.instance)
+  def initialize(session = CassandraClient.session_without_keyspace)
     @session = session
   end
 
