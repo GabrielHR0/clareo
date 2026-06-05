@@ -80,6 +80,10 @@
     {
       "name": "Public Accountability",
       "description": "Public campaign accountability reports"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Organization dashboard with aggregated metrics"
     }
   ],
   "paths": {
@@ -1815,6 +1819,39 @@
           }
         }
       }
+    },
+    "/api/v1/organizations/{id}/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Organization Dashboard",
+        "description": "Returns aggregated metrics, campaign details, and recent transactions for an organization",
+        "operationId": "getOrganizationDashboard",
+        "parameters": [{
+          "name": "id",
+          "in": "path",
+          "description": "Organization UUID",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }],
+        "responses": {
+          "200": {
+            "description": "Dashboard data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Dashboard" }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2280,6 +2317,56 @@
           "next_charge_date": { "type": "string", "format": "date" },
           "campaign_id": { "type": "string", "format": "uuid", "nullable": true },
           "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Dashboard": {
+        "type": "object",
+        "properties": {
+          "organization_id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "metrics": {
+            "type": "object",
+            "properties": {
+              "total_raised_cents": { "type": "integer" },
+              "total_spent_cents": { "type": "integer" },
+              "balance_cents": { "type": "integer" },
+              "wallet_available_cents": { "type": "integer" },
+              "active_campaigns": { "type": "integer" },
+              "total_campaigns": { "type": "integer" },
+              "member_count": { "type": "integer" },
+              "credit_line_available_cents": { "type": "integer" }
+            }
+          },
+          "campaigns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "campaign_id": { "type": "string", "format": "uuid" },
+                "name": { "type": "string" },
+                "status": { "type": "string" },
+                "raised_cents": { "type": "integer" },
+                "spent_cents": { "type": "integer" },
+                "balance_cents": { "type": "integer" },
+                "goal_cents": { "type": "integer" },
+                "progress_pct": { "type": "number", "format": "float" }
+              }
+            }
+          },
+          "recent_transactions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "transaction_id": { "type": "string", "format": "uuid" },
+                "amount_cents": { "type": "integer" },
+                "transaction_type": { "type": "string" },
+                "status": { "type": "string" },
+                "campaign_id": { "type": "string", "format": "uuid", "nullable": true },
+                "created_at": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
         }
       },
       "AccountabilityReport": {

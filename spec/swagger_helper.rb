@@ -187,6 +187,56 @@ RSpec.configure do |config|
               created_at: { type: 'string', format: 'date-time' }
             }
           },
+          Dashboard: {
+            type: 'object',
+            properties: {
+              organization_id: { type: 'string', format: 'uuid' },
+              name: { type: 'string' },
+              metrics: {
+                type: 'object',
+                properties: {
+                  total_raised_cents: { type: 'integer' },
+                  total_spent_cents: { type: 'integer' },
+                  balance_cents: { type: 'integer' },
+                  wallet_available_cents: { type: 'integer' },
+                  active_campaigns: { type: 'integer' },
+                  total_campaigns: { type: 'integer' },
+                  member_count: { type: 'integer' },
+                  credit_line_available_cents: { type: 'integer' }
+                }
+              },
+              campaigns: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    campaign_id: { type: 'string', format: 'uuid' },
+                    name: { type: 'string' },
+                    status: { type: 'string' },
+                    raised_cents: { type: 'integer' },
+                    spent_cents: { type: 'integer' },
+                    balance_cents: { type: 'integer' },
+                    goal_cents: { type: 'integer' },
+                    progress_pct: { type: 'number', format: 'float' }
+                  }
+                }
+              },
+              recent_transactions: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    transaction_id: { type: 'string', format: 'uuid' },
+                    amount_cents: { type: 'integer' },
+                    transaction_type: { type: 'string' },
+                    status: { type: 'string' },
+                    campaign_id: { type: 'string', format: 'uuid', nullable: true },
+                    created_at: { type: 'string', format: 'date-time' }
+                  }
+                }
+              }
+            }
+          },
           AccountabilityReport: {
             type: 'object',
             properties: {

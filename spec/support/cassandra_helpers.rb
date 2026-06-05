@@ -2,11 +2,13 @@ module CassandraSpecHelpers
   TABLES = %w[
     clareo.wallets
     clareo.transactions_by_owner
+    clareo.transactions_by_campaign
     clareo.idempotency_keys_by_owner
     clareo.ledger_entries_by_owner
     clareo.payment_intents_by_owner
     clareo.expense_entries
     clareo.expense_attachments
+    clareo.payment_methods
   ]
 
   def truncate_cassandra!

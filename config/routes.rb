@@ -33,6 +33,7 @@ Rails.application.routes.draw do
     get "/owners/:owner_type/:owner_id/transactions/:id", to: "transactions#show", as: :api_v1_owner_transaction
     get "/campaigns/:campaign_id/transactions", to: "transactions#by_campaign", as: :api_v1_campaign_transactions
     post "/owners/:owner_type/:owner_id/payment_methods", to: "payment_methods#create", as: :api_v1_owner_payment_methods
+    get "/organizations/:id/dashboard", to: "dashboard#show", as: :api_v1_org_dashboard
     resources :credit_lines, only: [:index, :show, :create] do
       post "use", on: :member
     end
@@ -57,6 +58,7 @@ Rails.application.routes.draw do
   get "/owners/:owner_type/:owner_id/transactions/:id", to: "transactions#show", as: :owner_transaction
   get "/campaigns/:campaign_id/transactions", to: "transactions#by_campaign", as: :campaign_transactions
   post "/owners/:owner_type/:owner_id/payment_methods", to: "payment_methods#create", as: :owner_payment_methods
+  get "/organizations/:id/dashboard", to: "dashboard#show", as: :org_dashboard
   resources :credit_lines, only: [:index, :show, :create] do
     post "use", on: :member
   end
