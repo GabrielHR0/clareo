@@ -9,12 +9,14 @@ module ContributorsRepository
   CQL
 
   GET_CQL = "SELECT * FROM clareo.contributors WHERE contributor_id = ?"
+  ALL_CQL = "SELECT * FROM clareo.contributors LIMIT ?"
 
   def prepare!
     return if @prepared
 
     @insert = CassandraClient.session.prepare(CREATE_CQL)
     @get = CassandraClient.session.prepare(GET_CQL)
+    @all = CassandraClient.session.prepare(ALL_CQL)
     @prepared = true
   end
 
@@ -47,9 +49,15 @@ module ContributorsRepository
     Cassandra::Uuid.new(value || SecureRandom.uuid)
   end
 
+  def all(limit = 100)
+    prepare!
+    rows = CassandraClient.session.execute(@all, arguments: [limit], consistency: :quorum)
+    rows.map { |r| row_to_hash(r) }
+  end
+
   def find(id)
     prepare!
-    row = CassandraClient.session.execute(@get, arguments: [ id ], consistency: :quorum).first
+    row = CassandraClient.session.execute(@get, arguments: [ normalize_uuid(id) ], consistency: :quorum).first
     row && row_to_hash(row)
   end
 

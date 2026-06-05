@@ -1,6 +1,7 @@
 class ContributorsController < ApplicationController
   def index
-    render json: []
+    contributors = ContributorsRepository.all
+    render json: contributors
   end
 
   def create
@@ -12,7 +13,12 @@ class ContributorsController < ApplicationController
   end
 
   def show
-
+    contributor = ContributorsRepository.find(params[:id])
+    if contributor
+      render json: contributor
+    else
+      head :not_found
+    end
   end
 
   private
