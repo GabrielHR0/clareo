@@ -58,4 +58,4 @@ gem "sidekiq", "~> 8.1"
 gem "sidekiq-cron", "~> 1.5"
 gem "dotenv-rails", "~> 3.2"
 gem "rspec-rails", "~> 6.0"
-gem "kafka"
+# gem "kafka"  # skipped - KafkaProducer handles missing gem gracefully
