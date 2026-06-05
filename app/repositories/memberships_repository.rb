@@ -70,13 +70,13 @@ module MembershipsRepository
 
   def for_organization(organization_id)
     prepare!
-    rows = CassandraClient.session.execute(@get_by_org, arguments: [ organization_id ], consistency: :quorum)
+    rows = CassandraClient.session.execute(@get_by_org, arguments: [ normalize_uuid(organization_id) ], consistency: :quorum)
     rows.map { |row| row_to_hash(row) }
   end
 
   def for_contributor(contributor_id)
     prepare!
-    rows = CassandraClient.session.execute(@get_by_contributor, arguments: [ contributor_id ], consistency: :quorum)
+    rows = CassandraClient.session.execute(@get_by_contributor, arguments: [ normalize_uuid(contributor_id) ], consistency: :quorum)
     rows.map { |row| row_to_hash(row) }
   end
 
