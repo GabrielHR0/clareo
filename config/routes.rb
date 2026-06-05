@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   get "health/cassandra" => "health#cassandra", as: :cassandra_health_check
 
   scope "/api/v1" do
+    post "/public/checkout", to: "checkout#create", as: :api_v1_public_checkout
     resources :organizations, only: [ :create, :show, :index ] do
       resources :campaigns, only: [ :create, :show, :index ]
     end
