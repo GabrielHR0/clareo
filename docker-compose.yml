@@ -54,9 +54,36 @@ services:
       bash -lc "ruby -rsocket -e \"loop do; begin; TCPSocket.new('redis', 6379).close; break; rescue; sleep 1; end; end\" \
       && bundle install \
       && rm -f tmp/pids/server.pid \
+      && bin/rails cassandra:migrate \
       && bin/rails server -b 0.0.0.0 -p 3000"
     expose:
       - "3000"
+    restart: unless-stopped
+
+  sidekiq:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /rails
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: development
+      BUNDLE_PATH: /usr/local/bundle
+      CASSANDRA_CONTACT_POINTS: cassandra
+      CASSANDRA_PORT: "9042"
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - .:/rails
+      - bundle:/usr/local/bundle
+    command: >
+      bash -lc "ruby -rsocket -e \"loop do; begin; TCPSocket.new('redis', 6379).close; break; rescue; sleep 1; end; end\" \
+      && bundle exec sidekiq"
     restart: unless-stopped
 
   nginx:

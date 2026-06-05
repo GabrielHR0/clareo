@@ -13,7 +13,6 @@ services:
       BUNDLE_PATH: /usr/local/bundle
       CASSANDRA_CONTACT_POINTS: host.docker.internal
       REDIS_URL: redis://host.docker.internal:6379/0
-      KAFKA_BROKERS: ""
     volumes:
       - .:/rails
       - bundle:/usr/local/bundle

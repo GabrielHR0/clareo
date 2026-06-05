@@ -1,61 +1,10 @@
 #!/bin/bash
-# Robust docker entrypoint: wait for services and run init tasks (Kafka topics)
+# Robust docker entrypoint: run migrations and exec CMD
 set -e
 
-run_kafka_init() {
-	if [ -z "${KAFKA_BROKERS}" ]; then
-		echo "KAFKA_BROKERS not set; skipping kafka init"
-		return
-	fi
-
-	# extract first broker host:port
-	IFS=',' read -r first_broker _ <<< "${KAFKA_BROKERS}"
-	host=${first_broker%%:*}
-	port=${first_broker##*:}
-	port=${port:-9092}
-
-	echo "Waiting for Kafka at ${host}:${port}..."
-
-	# wait for tcp to be available (use bash /dev/tcp)
-	timeout=60
-	waited=0
-	until (echo > /dev/tcp/${host}/${port}) >/dev/null 2>&1 || [ ${waited} -ge ${timeout} ]; do
-		sleep 1
-		waited=$((waited+1))
-	done
-
-	if [ ${waited} -ge ${timeout} ]; then
-		echo "Kafka not reachable at ${host}:${port} after ${timeout}s; continuing without creating topics"
-		return
-	fi
-
-	# try to run rake task with retries but don't fail the container if it fails
-	tries=0
-	max_tries=5
-	until [ ${tries} -ge ${max_tries} ]; do
-		tries=$((tries+1))
-		echo "Running: bundle exec rake kafka:create_topics (attempt ${tries}/${max_tries})"
-		set +e
-		bundle exec rake kafka:create_topics
-		rc=$?
-		set -e
-		if [ $rc -eq 0 ]; then
-			echo "Kafka topics created successfully"
-			return
-		fi
-		echo "rake kafka:create_topics failed (exit $rc); retrying in 3s"
-		sleep 3
-	done
-
-	echo "Failed to create Kafka topics after ${max_tries} attempts; continuing"
-}
-
-# If the first arg is a shell command that starts the Rails server, run preflight tasks
-if [ "$#" -gt 0 ]; then
-	# run bundle install early (idempotent)
-	bundle install || true
-	# NOTE: kafka topic creation is handled by a dedicated init service in docker-compose (kafka-init).
-fi
+# Run Cassandra migrations (idempotent - uses IF NOT EXISTS)
+echo "Running Cassandra migrations..."
+bundle exec rails cassandra:migrate
+echo "Cassandra migrations complete."
 
 exec "${@}"
-

@@ -21,6 +21,8 @@ namespace :cassandra do
       statements.each do |stmt|
         begin
           CassandraClient.session_without_keyspace.execute(stmt)
+        rescue Cassandra::Errors::InvalidError => e
+          puts "Skipping (already applied): #{e.message}"
         rescue => e
           puts "Failed to execute statement in #{file}: #{e.class}: #{e.message}"
           raise
