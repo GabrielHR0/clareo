@@ -135,6 +135,96 @@ RSpec.configure do |config|
               created_at: { type: 'string', format: 'date-time' }
             },
             required: ['credit_line_id', 'owner_type', 'owner_id', 'limit_cents']
+          },
+          Campaign: {
+            type: 'object',
+            properties: {
+              campaign_id: { type: 'string', format: 'uuid' },
+              organization_id: { type: 'string', format: 'uuid' },
+              name: { type: 'string' },
+              goal_cents: { type: 'integer' },
+              raised_cents: { type: 'integer' },
+              status: { type: 'string' },
+              created_at: { type: 'string', format: 'date-time' }
+            }
+          },
+          ExpenseEntry: {
+            type: 'object',
+            properties: {
+              entry_id: { type: 'string', format: 'uuid' },
+              organization_id: { type: 'string', format: 'uuid' },
+              campaign_id: { type: 'string', format: 'uuid' },
+              description: { type: 'string' },
+              amount_cents: { type: 'integer' },
+              category: { type: 'string' },
+              expense_date: { type: 'string', format: 'date' },
+              status: { type: 'string' },
+              created_at: { type: 'string', format: 'date-time' }
+            }
+          },
+          ExpenseAttachment: {
+            type: 'object',
+            properties: {
+              attachment_id: { type: 'string', format: 'uuid' },
+              filename: { type: 'string' },
+              original_filename: { type: 'string' },
+              content_type: { type: 'string' },
+              file_size: { type: 'integer' },
+              created_at: { type: 'string', format: 'date-time' }
+            }
+          },
+          RecurringDonation: {
+            type: 'object',
+            properties: {
+              recurring_id: { type: 'string', format: 'uuid' },
+              organization_id: { type: 'string', format: 'uuid' },
+              contributor_id: { type: 'string', format: 'uuid' },
+              amount_cents: { type: 'integer' },
+              interval_days: { type: 'integer' },
+              payment_method: { type: 'string' },
+              status: { type: 'string' },
+              next_charge_date: { type: 'string', format: 'date' },
+              created_at: { type: 'string', format: 'date-time' }
+            }
+          },
+          AccountabilityReport: {
+            type: 'object',
+            properties: {
+              organization: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', format: 'uuid' },
+                  name: { type: 'string' }
+                }
+              },
+              campaign: { '$ref': '#/components/schemas/Campaign' },
+              summary: {
+                type: 'object',
+                properties: {
+                  total_raised: { type: 'integer' },
+                  total_spent: { type: 'integer' },
+                  balance: { type: 'integer' },
+                  expense_count: { type: 'integer' }
+                }
+              },
+              expenses: {
+                type: 'array',
+                items: {
+                  allOf: [
+                    { '$ref': '#/components/schemas/ExpenseEntry' },
+                    {
+                      type: 'object',
+                      properties: {
+                        attachments: {
+                          type: 'array',
+                          items: { '$ref': '#/components/schemas/ExpenseAttachment' }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         securitySchemes: {

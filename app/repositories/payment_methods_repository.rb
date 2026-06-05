@@ -1,28 +1,38 @@
-class PaymentMethodsRepository
+module PaymentMethodsRepository
+  extend self
+
   INSERT_CQL = "INSERT INTO clareo.payment_methods (owner_type, owner_id, method_id, method_type, details, is_default, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
   SELECT_DEFAULT_CQL = "SELECT * FROM clareo.payment_methods WHERE owner_type = ? AND owner_id = ? AND is_default = true ALLOW FILTERING"
 
-  def initialize(session = CassandraClient.session_without_keyspace)
-    @session = session
+  def prepare!
+    return if @prepared
+    @insert = CassandraClient.session.prepare(INSERT_CQL)
+    @get_default = CassandraClient.session.prepare(SELECT_DEFAULT_CQL)
+    @prepared = true
   end
 
   def create(owner_type:, owner_id:, method_type:, details:, is_default: false)
-    method_id = SecureRandom.uuid
-    @session.execute(INSERT_CQL, arguments: [owner_type.to_s, normalize_uuid(owner_id), normalize_uuid(method_id), method_type.to_s, details, is_default, Time.now])
-    { method_id: method_id, owner_type: owner_type, owner_id: owner_id, method_type: method_type, details: details, is_default: is_default }
+    prepare!
+    method_id = Cassandra::Uuid.new(SecureRandom.uuid)
+    CassandraClient.session.execute(@insert, arguments: [
+      owner_type.to_s, normalize_uuid(owner_id), method_id,
+      method_type.to_s, details, is_default, Time.now
+    ], consistency: :quorum)
+    { method_id: method_id.to_s, owner_type: owner_type, owner_id: owner_id, method_type: method_type, details: details, is_default: is_default }
   end
 
   def find_default(owner_type, owner_id)
-    rows = @session.execute(SELECT_DEFAULT_CQL, arguments: [owner_type.to_s, normalize_uuid(owner_id)])
+    prepare!
+    rows = CassandraClient.session.execute(@get_default, arguments: [
+      owner_type.to_s, normalize_uuid(owner_id)
+    ], consistency: :quorum)
     row = rows.first
     return nil unless row
-    { method_id: row['method_id'], method_type: row['method_type'], details: row['details'] }
+    { method_id: row["method_id"].to_s, method_type: row["method_type"], details: row["details"] }
   end
 
-  private
-
-  def normalize_uuid(v)
-    return v if v.is_a?(Cassandra::Uuid)
-    Cassandra::Uuid.new(v) if v
+  def normalize_uuid(value)
+    return value if value.is_a?(Cassandra::Uuid)
+    Cassandra::Uuid.new(value) if value
   end
 end

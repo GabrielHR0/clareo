@@ -64,6 +64,22 @@
     {
       "name": "Credit Lines",
       "description": "Credit line management and draws"
+    },
+    {
+      "name": "Campaigns",
+      "description": "Campaign management for fundraising"
+    },
+    {
+      "name": "Expenses",
+      "description": "Expense tracking for campaign accountability"
+    },
+    {
+      "name": "Recurring Donations",
+      "description": "Recurring donation management"
+    },
+    {
+      "name": "Public Accountability",
+      "description": "Public campaign accountability reports"
     }
   ],
   "paths": {
@@ -1427,6 +1443,378 @@
           }
         }
       }
+    },
+    "/api/v1/organizations/{organization_id}/campaigns": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "List campaigns for an organization",
+        "operationId": "listCampaigns",
+        "parameters": [{
+          "name": "organization_id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }],
+        "responses": {
+          "200": {
+            "description": "List of campaigns",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Campaign" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Campaigns"],
+        "summary": "Create a campaign",
+        "operationId": "createCampaign",
+        "parameters": [{
+          "name": "organization_id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "campaign": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "description": { "type": "string" },
+                      "goal_cents": { "type": "integer" }
+                    },
+                    "required": ["name", "goal_cents"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Campaign created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "campaign_id": { "type": "string", "format": "uuid" },
+                    "organization_id": { "type": "string", "format": "uuid" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/campaigns/{id}": {
+      "get": {
+        "tags": ["Campaigns"],
+        "summary": "Get campaign details",
+        "operationId": "getCampaign",
+        "parameters": [
+          { "name": "organization_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Campaign details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Campaign" }
+              }
+            }
+          },
+          "404": {
+            "description": "Campaign not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/campaigns/{campaign_id}/expenses": {
+      "get": {
+        "tags": ["Expenses"],
+        "summary": "List expenses for a campaign",
+        "operationId": "listExpenses",
+        "parameters": [
+          { "name": "organization_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "campaign_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of expenses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ExpenseEntry" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Expenses"],
+        "summary": "Create an expense entry",
+        "operationId": "createExpense",
+        "parameters": [
+          { "name": "organization_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "campaign_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expense": {
+                    "type": "object",
+                    "properties": {
+                      "description": { "type": "string" },
+                      "amount_cents": { "type": "integer" },
+                      "category": { "type": "string" },
+                      "expense_date": { "type": "string", "format": "date" }
+                    },
+                    "required": ["description", "amount_cents"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Expense created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ExpenseEntry" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/campaigns/{campaign_id}/expenses/{id}": {
+      "get": {
+        "tags": ["Expenses"],
+        "summary": "Get expense with attachments",
+        "operationId": "getExpense",
+        "parameters": [
+          { "name": "organization_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "campaign_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Expense with attachments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/ExpenseEntry" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "attachments": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/ExpenseAttachment" }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Expense not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organizations/{organization_id}/campaigns/{campaign_id}/expenses/{expense_id}/attachments": {
+      "post": {
+        "tags": ["Expenses"],
+        "summary": "Upload an attachment to an expense",
+        "operationId": "uploadAttachment",
+        "parameters": [
+          { "name": "organization_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "campaign_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "expense_id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Attachment uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "attachment_id": { "type": "string", "format": "uuid" },
+                    "filename": { "type": "string" },
+                    "original_filename": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contributors/{contributor_id}/recurring_donations": {
+      "get": {
+        "tags": ["Recurring Donations"],
+        "summary": "List recurring donations",
+        "operationId": "listRecurringDonations",
+        "parameters": [{
+          "name": "contributor_id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }],
+        "responses": {
+          "200": {
+            "description": "List of recurring donations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/RecurringDonation" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Recurring Donations"],
+        "summary": "Create a recurring donation",
+        "operationId": "createRecurringDonation",
+        "parameters": [{
+          "name": "contributor_id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "recurring_donation": {
+                    "type": "object",
+                    "properties": {
+                      "organization_id": { "type": "string", "format": "uuid" },
+                      "amount_cents": { "type": "integer" },
+                      "interval_days": { "type": "integer" },
+                      "payment_method": { "type": "string" },
+                      "campaign_id": { "type": "string", "format": "uuid" }
+                    },
+                    "required": ["organization_id", "amount_cents"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recurring donation created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "recurring_id": { "type": "string", "format": "uuid" },
+                    "organization_id": { "type": "string", "format": "uuid" },
+                    "contributor_id": { "type": "string", "format": "uuid" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/campaigns/{campaign_id}/accountability": {
+      "get": {
+        "tags": ["Public Accountability"],
+        "summary": "Get campaign accountability report",
+        "operationId": "getAccountabilityReport",
+        "parameters": [{
+          "name": "campaign_id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }],
+        "responses": {
+          "200": {
+            "description": "Accountability report",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AccountabilityReport" }
+              }
+            }
+          },
+          "404": {
+            "description": "Campaign not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1837,6 +2225,100 @@
           "limit_cents": 1000000,
           "available_cents": 1000000,
           "created_at": "2026-05-25T10:30:00Z"
+        }
+      },
+      "Campaign": {
+        "type": "object",
+        "properties": {
+          "campaign_id": { "type": "string", "format": "uuid" },
+          "organization_id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "goal_cents": { "type": "integer" },
+          "raised_cents": { "type": "integer" },
+          "status": { "type": "string" },
+          "starts_at": { "type": "string", "format": "date-time" },
+          "ends_at": { "type": "string", "format": "date-time", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ExpenseEntry": {
+        "type": "object",
+        "properties": {
+          "entry_id": { "type": "string", "format": "uuid" },
+          "organization_id": { "type": "string", "format": "uuid" },
+          "campaign_id": { "type": "string", "format": "uuid" },
+          "description": { "type": "string" },
+          "amount_cents": { "type": "integer" },
+          "category": { "type": "string" },
+          "expense_date": { "type": "string", "format": "date" },
+          "status": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ExpenseAttachment": {
+        "type": "object",
+        "properties": {
+          "attachment_id": { "type": "string", "format": "uuid" },
+          "filename": { "type": "string" },
+          "original_filename": { "type": "string" },
+          "content_type": { "type": "string" },
+          "file_size": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RecurringDonation": {
+        "type": "object",
+        "properties": {
+          "recurring_id": { "type": "string", "format": "uuid" },
+          "organization_id": { "type": "string", "format": "uuid" },
+          "contributor_id": { "type": "string", "format": "uuid" },
+          "amount_cents": { "type": "integer" },
+          "interval_days": { "type": "integer" },
+          "payment_method": { "type": "string" },
+          "status": { "type": "string" },
+          "next_charge_date": { "type": "string", "format": "date" },
+          "campaign_id": { "type": "string", "format": "uuid", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AccountabilityReport": {
+        "type": "object",
+        "properties": {
+          "organization": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" }
+            }
+          },
+          "campaign": { "$ref": "#/components/schemas/Campaign" },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "total_raised": { "type": "integer" },
+              "total_spent": { "type": "integer" },
+              "balance": { "type": "integer" },
+              "expense_count": { "type": "integer" }
+            }
+          },
+          "expenses": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                { "$ref": "#/components/schemas/ExpenseEntry" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "attachments": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/ExpenseAttachment" }
+                    }
+                  }
+                }
+              ]
+            }
+          }
         }
       }
     },
