@@ -8,8 +8,21 @@ Rails.application.routes.draw do
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
+  # Auth (público — sem token)
+  scope "/api/v1" do
+    post "/auth/register", to: "auth#register"
+    post "/auth/login",    to: "auth#login"
+    get  "/auth/me",       to: "auth#me"
+  end
+
+  post "/auth/register", to: "auth#register"
+  post "/auth/login",    to: "auth#login"
+  get  "/auth/me",       to: "auth#me"
+
   get "up" => "rails/health#show", as: :rails_health_check
   get "health/cassandra" => "health#cassandra", as: :cassandra_health_check
+  get "health/redis" => "health#redis", as: :redis_health_check
+  get "health/all" => "health#all", as: :health_all
 
   scope "/api/v1" do
     post "/public/checkout", to: "checkout#create", as: :api_v1_public_checkout
