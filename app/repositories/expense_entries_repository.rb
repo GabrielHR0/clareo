@@ -7,7 +7,7 @@ module ExpenseEntriesRepository
   CQL
 
   GET_CQL = "SELECT * FROM clareo.expense_entries WHERE organization_id = ? AND campaign_id = ? AND entry_id = ?"
-  LIST_CQL = "SELECT * FROM clareo.expense_entries WHERE organization_id = ? AND campaign_id = ?"
+  LIST_CQL = "SELECT * FROM clareo.expense_entries WHERE organization_id = ? AND campaign_id = ? LIMIT ?"
   DELETE_CQL = "DELETE FROM clareo.expense_entries WHERE organization_id = ? AND campaign_id = ? AND entry_id = ?"
 
   def prepare!
@@ -49,10 +49,10 @@ module ExpenseEntriesRepository
     row && row_to_hash(row)
   end
 
-  def list(org_id, campaign_id)
+  def list(org_id, campaign_id, limit = 100)
     prepare!
     rows = CassandraClient.session.execute(@list, arguments: [
-      normalize_uuid(org_id), normalize_uuid(campaign_id)
+      normalize_uuid(org_id), normalize_uuid(campaign_id), limit
     ], consistency: :quorum)
     rows.map { |r| row_to_hash(r) }
   end

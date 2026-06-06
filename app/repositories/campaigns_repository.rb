@@ -9,7 +9,7 @@ module CampaignsRepository
   CQL
 
   GET_CQL = "SELECT * FROM clareo.campaigns WHERE organization_id = ? AND campaign_id = ?"
-  LIST_CQL = "SELECT * FROM clareo.campaigns WHERE organization_id = ?"
+  LIST_CQL = "SELECT * FROM clareo.campaigns WHERE organization_id = ? LIMIT ?"
 
   def prepare!
     return if @prepared
@@ -56,10 +56,10 @@ module CampaignsRepository
     row && row_to_hash(row)
   end
 
-  def list(org_id)
+  def list(org_id, limit = 100)
     prepare!
     rows = CassandraClient.session.execute(@list, arguments: [
-      normalize_uuid(org_id)
+      normalize_uuid(org_id), limit
     ], consistency: :quorum)
     rows.map { |r| row_to_hash(r) }
   end

@@ -2,7 +2,8 @@ class CampaignsController < ApplicationController
   before_action :set_organization
 
   def index
-    campaigns = CampaignsRepository.list(@org_id)
+    limit = params[:limit]&.to_i&.clamp(1, 500) || 100
+    campaigns = CampaignsRepository.list(@org_id, limit)
     render json: campaigns
   end
 

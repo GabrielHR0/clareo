@@ -2,7 +2,8 @@ class ExpensesController < ApplicationController
   before_action :set_parents
 
   def index
-    expenses = ExpenseEntriesRepository.list(@org_id, @campaign_id)
+    limit = params[:limit]&.to_i&.clamp(1, 500) || 100
+    expenses = ExpenseEntriesRepository.list(@org_id, @campaign_id, limit)
     render json: expenses
   end
 
