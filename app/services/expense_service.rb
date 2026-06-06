@@ -25,8 +25,6 @@ class ExpenseService
     merged[:organization_id] = org_id
     merged[:campaign_id] = campaign_id
 
-    existing_entry = ExpenseEntriesRepository.find(org_id, campaign_id, entry_id)
-    ExpenseEntriesRepository.delete(org_id, campaign_id, entry_id)
     ExpenseEntriesRepository.create(merged)
 
     ExpenseEntriesRepository.find(org_id, campaign_id, entry_id)
