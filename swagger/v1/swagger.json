@@ -84,6 +84,10 @@
     {
       "name": "Dashboard",
       "description": "Organization dashboard with aggregated metrics"
+    },
+    {
+      "name": "Auth",
+      "description": "User authentication (register, login, profile)"
     }
   ],
   "paths": {
@@ -1852,6 +1856,243 @@
           }
         }
       }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new user",
+        "operationId": "registerUser",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [{
+          "in": "body",
+          "name": "body",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "email": { "type": "string", "format": "email" },
+              "password": { "type": "string", "minLength": 8 },
+              "name": { "type": "string" }
+            },
+            "required": ["email", "password", "name"]
+          }
+        }],
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "user_id": { "type": "string", "format": "uuid" },
+                        "email": { "type": "string", "format": "email" },
+                        "name": { "type": "string" }
+                      }
+                    },
+                    "token": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already registered",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Log in",
+        "operationId": "loginUser",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [{
+          "in": "body",
+          "name": "body",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "email": { "type": "string", "format": "email" },
+              "password": { "type": "string" }
+            },
+            "required": ["email", "password"]
+          }
+        }],
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "user_id": { "type": "string", "format": "uuid" },
+                        "email": { "type": "string", "format": "email" },
+                        "name": { "type": "string" }
+                      }
+                    },
+                    "token": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Get current user",
+        "operationId": "getCurrentUser",
+        "produces": ["application/json"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Current user data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "user_id": { "type": "string", "format": "uuid" },
+                        "email": { "type": "string", "format": "email" },
+                        "name": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/redis": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Redis health check",
+        "operationId": "redisHealth",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Redis is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Redis is not healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "error" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/all": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Combined health check",
+        "operationId": "allHealth",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "All services healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cassandra": {
+                      "type": "object",
+                      "properties": {
+                        "status": { "type": "string", "example": "ok" }
+                      }
+                    },
+                    "redis": {
+                      "type": "object",
+                      "properties": {
+                        "status": { "type": "string", "example": "ok" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Some service unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cassandra": { "type": "object" },
+                    "redis": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1880,6 +2121,11 @@
             "format": "uuid",
             "description": "Organization UUID"
           },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Organization UUID (alias)"
+          },
           "name": {
             "type": "string",
             "description": "Organization name"
@@ -1888,6 +2134,12 @@
             "type": "string",
             "nullable": true,
             "description": "External identifier for integration"
+          },
+          "owner_user_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "User ID of the organization owner"
           },
           "created_at": {
             "type": "string",
@@ -1905,6 +2157,23 @@
           "external_id": "ext_123",
           "created_at": "2026-05-25T10:30:00Z"
         }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["user_id", "email", "name"]
       },
       "Contributor": {
         "type": "object",
