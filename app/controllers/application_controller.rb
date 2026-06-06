@@ -1,44 +1,70 @@
 require "digest"
+require "jwt_auth"
 
 class ApplicationController < ActionController::API
-	rescue_from StandardError, with: :render_internal_error
+  rescue_from StandardError, with: :render_internal_error
 
-	before_action :authenticate!
+  before_action :authenticate!
 
-	private
+  private
 
-	def authenticate!
-		return if skip_auth?
+  def authenticate!
+    return if skip_auth?
 
-		api_key = request.headers["X-API-Key"]
-		return render_unauthorized("API key required") unless api_key
+    if bearer_token
+      authenticate_with_jwt!
+    elsif request.headers["X-API-Key"]
+      authenticate_with_api_key!
+    else
+      render_unauthorized("Authentication required")
+    end
+  end
 
-		hash = Digest::SHA256.base64digest(api_key)
-		@current_organization = OrganizationsRepository.find_by_api_key_hash(hash)
-		render_unauthorized("Invalid API key") unless @current_organization
-	end
+  def bearer_token
+    auth = request.headers["Authorization"]
+    auth&.start_with?("Bearer ") && auth.split(" ", 2).last
+  end
 
-	def skip_auth?
-		Rails.env.test? || public_path?
-	end
+  def authenticate_with_jwt!
+    payload = JwtAuth.decode(bearer_token)
+    return render_unauthorized("Invalid or expired token") unless payload
 
-	def public_path?
-		path = request.path
-		path == "/up" ||
-		path.start_with?("/health", "/api-docs") ||
-		path.include?("/public/")
-	end
+    @current_user = UsersRepository.find(payload["user_id"])
+    render_unauthorized("User not found") unless @current_user
+  end
 
-	def render_unauthorized(message)
-		render json: { error: message }, status: :unauthorized
-	end
+  def authenticate_with_api_key!
+    api_key = request.headers["X-API-Key"]
+    hash = Digest::SHA256.base64digest(api_key)
+    @current_organization = OrganizationsRepository.find_by_api_key_hash(hash)
+    render_unauthorized("Invalid API key") unless @current_organization
+  end
 
-	def render_internal_error(exception)
-		Rails.logger.error(exception.full_message(highlight: false, order: :top))
+  def skip_auth?
+    Rails.env.test? || public_path? || auth_path?
+  end
 
-		render json: {
-			error: exception.class.name,
-			message: exception.message
-		}, status: :internal_server_error
-	end
+  def public_path?
+    path = request.path
+    path == "/up" ||
+    path.start_with?("/health", "/api-docs") ||
+    path.include?("/public/")
+  end
+
+  def auth_path?
+    request.path.include?("/auth/register") || request.path.include?("/auth/login")
+  end
+
+  def render_unauthorized(message)
+    render json: { error: message }, status: :unauthorized
+  end
+
+  def render_internal_error(exception)
+    Rails.logger.error(exception.full_message(highlight: false, order: :top))
+
+    render json: {
+      error: exception.class.name,
+      message: exception.message
+    }, status: :internal_server_error
+  end
 end

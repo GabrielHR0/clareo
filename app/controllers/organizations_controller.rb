@@ -34,7 +34,8 @@ class OrganizationsController < ApplicationController
       :status,
       :contact_email,
       :webhook_url,
-      :api_key_hash
+      :api_key_hash,
+      :owner_user_id
     )
   end
 end

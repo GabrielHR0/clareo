@@ -40,7 +40,7 @@ RSpec.describe "Authentication", type: :request do
     it "returns 401 without API key" do
       get "/api/v1/organizations/#{org_id}"
       expect(response).to have_http_status(:unauthorized)
-      expect(JSON.parse(response.body)["error"]).to eq("API key required")
+      expect(JSON.parse(response.body)["error"]).to eq("Authentication required")
     end
 
     it "returns 401 with invalid API key" do
