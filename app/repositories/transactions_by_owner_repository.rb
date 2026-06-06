@@ -76,14 +76,14 @@ module TransactionsByOwnerRepository
   def row_to_hash(row)
     {
       owner_type: row["owner_type"],
-      owner_id: row["owner_id"],
-      transaction_id: row["transaction_id"],
+      owner_id: row["owner_id"]&.to_s,
+      transaction_id: row["transaction_id"]&.to_s,
       created_at: row["created_at"],
       amount_cents: row["amount_cents"],
       currency: row["currency"],
       transaction_type: row["transaction_type"],
       status: row["status"],
-      campaign_id: row["campaign_id"],
+      campaign_id: row["campaign_id"]&.to_s,
       idempotency_key: row["idempotency_key"],
       external_reference: row["external_reference"],
       metadata: row["metadata"]

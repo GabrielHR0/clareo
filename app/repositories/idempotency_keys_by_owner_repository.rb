@@ -74,9 +74,9 @@ module IdempotencyKeysByOwnerRepository
   def row_to_hash(row)
     {
       owner_type: row["owner_type"],
-      owner_id: row["owner_id"],
+      owner_id: row["owner_id"]&.to_s,
       idempotency_key: row["idempotency_key"],
-      transaction_id: row["transaction_id"],
+      transaction_id: row["transaction_id"]&.to_s,
       request_hash: row["request_hash"],
       created_at: row["created_at"],
       expires_at: row["expires_at"]

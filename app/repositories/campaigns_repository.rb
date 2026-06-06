@@ -44,7 +44,7 @@ module CampaignsRepository
 
     CampaignsByIdRepository.insert(campaign_id: id, organization_id: org_id, name: attrs[:name])
 
-    { campaign_id: id, organization_id: org_id }
+    { campaign_id: id.to_s, organization_id: org_id.to_s }
   end
 
   def find(org_id, campaign_id)

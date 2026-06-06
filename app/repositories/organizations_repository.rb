@@ -4,8 +4,8 @@ module OrganizationsRepository
   extend self
 
   CREATE_CQL = <<~CQL
-    INSERT INTO clareo.organizations (organization_id, name, cnpj, status, contact_email, webhook_url, api_key_hash, created_at, updated_at)
-    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO clareo.organizations (organization_id, name, cnpj, status, contact_email, webhook_url, api_key_hash, owner_user_id, created_at, updated_at)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   CQL
 
   GET_CQL = "SELECT * FROM clareo.organizations WHERE organization_id = ?"
@@ -26,8 +26,9 @@ module OrganizationsRepository
     id = normalize_uuid(attrs[:organization_id])
     now = Time.now
     status = attrs[:status] || "active"
+    owner_user_id = attrs[:owner_user_id] ? normalize_uuid(attrs[:owner_user_id]) : nil
 
-    result = CassandraClient.session.execute(@insert, arguments:
+    CassandraClient.session.execute(@insert, arguments:
       [
         id,
         attrs[:name],
@@ -36,6 +37,7 @@ module OrganizationsRepository
         attrs[:contact_email],
         attrs[:webhook_url],
         attrs[:api_key_hash],
+        owner_user_id,
         now,
         now
       ], consistency: :quorum)
@@ -70,13 +72,14 @@ module OrganizationsRepository
 
   def row_to_hash(row)
     {
-      organization_id: row["organization_id"],
+      organization_id: row["organization_id"]&.to_s,
       name: row["name"],
       cnpj: row["cnpj"],
       status: row["status"],
       contact_email: row["contact_email"],
       webhook_url: row["webhook_url"],
       api_key_hash: row["api_key_hash"],
+      owner_user_id: row["owner_user_id"]&.to_s,
       created_at: row["created_at"],
       updated_at: row["updated_at"]
     }

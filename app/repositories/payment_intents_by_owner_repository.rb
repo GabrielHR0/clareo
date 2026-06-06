@@ -60,10 +60,10 @@ module PaymentIntentsByOwnerRepository
   def row_to_hash(row)
     {
       owner_type: row["owner_type"],
-      owner_id: row["owner_id"],
-      payment_intent_id: row["payment_intent_id"],
+      owner_id: row["owner_id"]&.to_s,
+      payment_intent_id: row["payment_intent_id"]&.to_s,
       amount_cents: row["amount_cents"],
-      campaign_id: row["campaign_id"],
+      campaign_id: row["campaign_id"]&.to_s,
       status: row["status"],
       provider: row["provider"],
       provider_reference: row["provider_reference"],

@@ -63,10 +63,10 @@ module LedgerEntriesByOwnerRepository
   def row_to_hash(row)
     {
       owner_type: row["owner_type"],
-      owner_id: row["owner_id"],
-      entry_id: row["entry_id"],
+      owner_id: row["owner_id"]&.to_s,
+      entry_id: row["entry_id"]&.to_s,
       created_at: row["created_at"],
-      transaction_id: row["transaction_id"],
+      transaction_id: row["transaction_id"]&.to_s,
       entry_type: row["entry_type"],
       account: row["account"],
       amount_cents: row["amount_cents"],

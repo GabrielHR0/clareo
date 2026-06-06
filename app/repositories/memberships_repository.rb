@@ -84,9 +84,9 @@ module MembershipsRepository
 
   def row_to_hash(row)
     {
-      organization_id: row["organization_id"],
-      contributor_id: row["contributor_id"],
-      membership_id: row["membership_id"],
+      organization_id: row["organization_id"]&.to_s,
+      contributor_id: row["contributor_id"]&.to_s,
+      membership_id: row["membership_id"]&.to_s,
       status: row["status"],
       created_at: row["created_at"],
       updated_at: row["updated_at"]

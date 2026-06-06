@@ -62,8 +62,8 @@ module AuditEventsRepository
   def row_to_hash(row)
     {
       owner_type: row['owner_type'],
-      owner_id: row['owner_id'],
-      event_id: row['event_id'],
+      owner_id: row['owner_id']&.to_s,
+      event_id: row['event_id']&.to_s,
       created_at: row['created_at'],
       event_type: row['event_type'],
       payload: row['payload']

@@ -113,7 +113,7 @@ module WalletsRepository
 
   def row_to_hash(row)
     {
-      owner_id: row["owner_id"],
+      owner_id: row["owner_id"]&.to_s,
       owner_type: row["owner_type"],
       balance_cents: row["balance_cents"],
       available_cents: row["available_cents"],
