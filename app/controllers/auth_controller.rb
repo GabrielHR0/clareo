@@ -20,6 +20,8 @@ class AuthController < ApplicationController
     user_id = UsersRepository.create(email: email, password_hash: password_hash, name: name)
     user = UsersRepository.find(user_id)
 
+    wallet = CreateWalletService.call(owner_type: "user", owner_id: user_id)
+
     token = JwtAuth.encode({ user_id: user[:user_id].to_s, email: user[:email] })
 
     render json: {
@@ -28,6 +30,7 @@ class AuthController < ApplicationController
         email: user[:email],
         name: user[:name]
       },
+      wallet: wallet,
       token: token
     }, status: :created
   end

@@ -1,5 +1,5 @@
 class CreateWalletService
-  ALLOWED_OWNER_TYPES = %w[organization contributor].freeze
+  ALLOWED_OWNER_TYPES = %w[organization contributor user].freeze
 
   def self.call(owner_type:, owner_id:)
     owner_type = owner_type.to_s
