@@ -13,11 +13,21 @@ Rails.application.routes.draw do
     post "/auth/register", to: "auth#register"
     post "/auth/login",    to: "auth#login"
     get  "/auth/me",       to: "auth#me"
+    get  "/auth/me/contributor", to: "auth#me_contributor", as: :api_v1_auth_me_contributor
   end
 
   post "/auth/register", to: "auth#register"
   post "/auth/login",    to: "auth#login"
   get  "/auth/me",       to: "auth#me"
+  get  "/auth/me/contributor", to: "auth#me_contributor"
+
+  get "/associations", to: "associations#index"
+  post "/associations", to: "associations#create"
+  delete "/associations/:organization_id", to: "associations#destroy"
+
+  get "/me/recurring_donations", to: "my_recurring_donations#index"
+  post "/me/recurring_donations", to: "my_recurring_donations#create"
+  delete "/me/recurring_donations/:id", to: "my_recurring_donations#destroy"
 
   get "up" => "rails/health#show", as: :rails_health_check
   get "health/cassandra" => "health#cassandra", as: :cassandra_health_check
@@ -25,9 +35,19 @@ Rails.application.routes.draw do
   get "health/all" => "health#all", as: :health_all
 
   scope "/api/v1" do
+    get "/public/organizations", to: "public_organizations#index", as: :api_v1_public_organizations
     post "/public/checkout", to: "checkout#create", as: :api_v1_public_checkout
     post "/public/donate/:organization_id", to: "public_donations#create", as: :api_v1_public_donate
     get "/public/campaigns/:campaign_id/accountability", to: "public_accountability#show", as: :api_v1_public_accountability
+
+    get "/associations", to: "associations#index", as: :api_v1_associations
+    post "/associations", to: "associations#create"
+    delete "/associations/:organization_id", to: "associations#destroy", as: :api_v1_association
+
+    get "/me/recurring_donations", to: "my_recurring_donations#index", as: :api_v1_my_recurring_donations
+    post "/me/recurring_donations", to: "my_recurring_donations#create"
+    delete "/me/recurring_donations/:id", to: "my_recurring_donations#destroy", as: :api_v1_my_recurring_donation
+
     resources :organizations, only: [ :create, :show, :index ] do
       resources :campaigns, only: [ :create, :show, :index ] do
         resources :expenses, controller: "expenses" do

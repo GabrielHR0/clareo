@@ -15,14 +15,17 @@ module MembershipsRepository
 
   GET_BY_ORG_CQL = "SELECT * FROM clareo.memberships_by_organization WHERE organization_id = ?"
   GET_BY_CONTRIBUTOR_CQL = "SELECT * FROM clareo.memberships_by_contributor WHERE contributor_id = ?"
+  DELETE_BY_ORG_CQL = "DELETE FROM clareo.memberships_by_organization WHERE organization_id = ? AND contributor_id = ?"
+  DELETE_BY_CONTRIBUTOR_CQL = "DELETE FROM clareo.memberships_by_contributor WHERE contributor_id = ? AND organization_id = ?"
 
   def prepare!
     return if @prepared
-
     @insert_by_org = CassandraClient.session.prepare(CREATE_BY_ORG_CQL)
     @insert_by_contributor = CassandraClient.session.prepare(CREATE_BY_CONTRIBUTOR_CQL)
     @get_by_org = CassandraClient.session.prepare(GET_BY_ORG_CQL)
     @get_by_contributor = CassandraClient.session.prepare(GET_BY_CONTRIBUTOR_CQL)
+    @delete_by_org = CassandraClient.session.prepare(DELETE_BY_ORG_CQL)
+    @delete_by_contributor = CassandraClient.session.prepare(DELETE_BY_CONTRIBUTOR_CQL)
     @prepared = true
   end
 
@@ -78,6 +81,12 @@ module MembershipsRepository
     prepare!
     rows = CassandraClient.session.execute(@get_by_contributor, arguments: [ normalize_uuid(contributor_id) ], consistency: :quorum)
     rows.map { |row| row_to_hash(row) }
+  end
+
+  def remove(organization_id, contributor_id)
+    prepare!
+    CassandraClient.session.execute(@delete_by_org, arguments: [ normalize_uuid(organization_id), normalize_uuid(contributor_id) ], consistency: :quorum)
+    CassandraClient.session.execute(@delete_by_contributor, arguments: [ normalize_uuid(contributor_id), normalize_uuid(organization_id) ], consistency: :quorum)
   end
 
   private

@@ -22,15 +22,22 @@ class AuthController < ApplicationController
 
     wallet = CreateWalletService.call(owner_type: "user", owner_id: user_id)
 
+    contributor_result = CreateContributorService.call(name: name, email: email)
+    contributor = contributor_result[:contributor]
+
+    UsersRepository.update(user_id, contributor_id: contributor[:contributor_id])
+
     token = JwtAuth.encode({ user_id: user[:user_id].to_s, email: user[:email] })
 
     render json: {
       user: {
         user_id: user[:user_id].to_s,
         email: user[:email],
-        name: user[:name]
+        name: user[:name],
+        contributor_id: contributor[:contributor_id].to_s
       },
       wallet: wallet,
+      contributor: contributor,
       token: token
     }, status: :created
   end
@@ -61,12 +68,25 @@ class AuthController < ApplicationController
   end
 
   def me
+    user = UsersRepository.find(@current_user[:user_id])
+
     render json: {
       user: {
-        user_id: @current_user[:user_id].to_s,
-        email: @current_user[:email],
-        name: @current_user[:name]
+        user_id: user[:user_id].to_s,
+        email: user[:email],
+        name: user[:name],
+        contributor_id: user[:contributor_id]&.to_s
       }
     }
+  end
+
+  def me_contributor
+    user = UsersRepository.find(@current_user[:user_id])
+    return head :not_found unless user[:contributor_id]
+
+    contributor = ContributorsRepository.find(user[:contributor_id])
+    return head :not_found unless contributor
+
+    render json: contributor
   end
 end

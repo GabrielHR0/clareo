@@ -68,7 +68,10 @@ module TransactionsByOwnerRepository
 
   def normalize_uuid(value)
     return value if value.is_a?(Cassandra::Uuid)
-    Cassandra::Uuid.new(value) if value
+    return nil unless value
+    Cassandra::Uuid.new(value)
+  rescue ArgumentError
+    nil
   end
 
   private

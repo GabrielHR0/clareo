@@ -15,7 +15,7 @@ module CassandraClient
     end
 
     # Ensure keyspace exists with given replication map
-    def ensure_keyspace!(ks = keyspace, dc = ENV.fetch("CASSANDRA_DC", "datacenter1"), rf = 3)
+    def ensure_keyspace!(ks = keyspace, dc = ENV.fetch("CASSANDRA_DC", "datacenter1"), rf = ENV.fetch("CASSANDRA_RF", 1).to_i)
       cql = <<~CQL.strip
         CREATE KEYSPACE IF NOT EXISTS #{ks}
         WITH replication = {'class': 'NetworkTopologyStrategy', '#{dc}': #{rf}}

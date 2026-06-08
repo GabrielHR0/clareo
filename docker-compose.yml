@@ -14,7 +14,7 @@ services:
     expose:
       - "9042"
     healthcheck:
-      test: ["CMD", "bash", "-lc", "cqlsh -e 'describe cluster' || exit 1"]
+      test: ["CMD", "bash", "-lc", "/opt/cassandra/bin/cqlsh -e 'describe cluster' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
