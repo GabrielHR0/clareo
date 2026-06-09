@@ -33,7 +33,9 @@ module RecurringDonationsRepository
     contrib_id = normalize_uuid(attrs[:contributor_id])
     now = Time.now
     status = attrs[:status] || "active"
-    next_charge = attrs[:next_charge_date] || (Date.today + 1)
+    next_charge = attrs[:next_charge_date]
+    next_charge = next_charge.is_a?(String) ? Date.parse(next_charge) : next_charge if next_charge
+    next_charge ||= Date.today + 1
     interval = attrs[:interval_days] || 30
 
     CassandraClient.session.execute(@insert, arguments: [

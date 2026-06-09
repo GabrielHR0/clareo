@@ -3,12 +3,18 @@ class RecurringDonationsController < ApplicationController
 
   def index
     donations = RecurringDonationsRepository.list_by_contributor(@contributor_id)
-    render json: donations
+
+    enriched = donations.map do |d|
+      org = OrganizationsRepository.find(d[:organization_id])
+      d.merge(organization_name: org ? org[:name] : nil)
+    end
+
+    render json: enriched
   end
 
   def create
     result = RecurringDonationService.create(recurring_params.merge(contributor_id: @contributor_id))
-    render json: result, status: :created, location: contributor_recurring_donation_url(@contributor_id, result[:recurring_id])
+    render json: result, status: :created
   rescue StandardError => e
     render json: { error: e.message }, status: :unprocessable_entity
   end
@@ -42,7 +48,23 @@ class RecurringDonationsController < ApplicationController
   end
 
   def set_contributor
-    @contributor_id = params[:contributor_id]
+    user_id = params[:user_id] || @current_user&.dig(:user_id)
+
+    if user_id
+      user = user_id == @current_user&.dig(:user_id) ? @current_user : UsersRepository.find(user_id)
+      return render json: { error: "User not found" }, status: :not_found unless user
+
+      @contributor_id = user[:contributor_id]
+
+      unless @contributor_id
+        result = CreateContributorService.call(name: user[:name], email: user[:email])
+        contributor = result[:contributor]
+        @contributor_id = contributor[:contributor_id].to_s
+        UsersRepository.update(user[:user_id], contributor_id: @contributor_id)
+      end
+    else
+      @contributor_id = params[:contributor_id]
+    end
   end
 
   def recurring_params

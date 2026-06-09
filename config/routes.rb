@@ -81,6 +81,9 @@ Rails.application.routes.draw do
     delete "/owners/:owner_type/:owner_id/payment_methods/:id", to: "payment_methods#destroy", as: :api_v1_owner_payment_method_delete
     get "/finance/:owner_type/:owner_id", to: "finance#show", as: :api_v1_finance
     get "/organizations/:id/dashboard", to: "dashboard#show", as: :api_v1_org_dashboard
+    get "/recurring_donations", to: "recurring_donations#index", as: :api_v1_recurring_donations
+    post "/recurring_donations", to: "recurring_donations#create", as: :api_v1_create_recurring_donation
+    delete "/recurring_donations/:id", to: "recurring_donations#destroy", as: :api_v1_delete_recurring_donation
     resources :credit_lines, only: [:index, :show, :create] do
       post "use", on: :member
     end
