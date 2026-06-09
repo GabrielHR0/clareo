@@ -6,7 +6,7 @@ module OrgPostsRepository
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   CQL
 
-  LIST_CQL = "SELECT * FROM clareo.org_posts WHERE organization_id = ?"
+  LIST_CQL = "SELECT * FROM clareo.org_posts WHERE organization_id = ? LIMIT ?"
   DELETE_CQL = "DELETE FROM clareo.org_posts WHERE organization_id = ? AND created_at = ? AND post_id = ?"
 
   def prepare!
@@ -36,10 +36,10 @@ module OrgPostsRepository
     { post_id: post_id.to_s, organization_id: org_id.to_s }
   end
 
-  def list(org_id)
+  def list(org_id, limit = 50)
     prepare!
     rows = CassandraClient.session.execute(@list, arguments: [
-      normalize_uuid(org_id)
+      normalize_uuid(org_id), limit
     ], consistency: :quorum)
     rows.map { |r| row_to_hash(r) }
   end
@@ -48,7 +48,7 @@ module OrgPostsRepository
     prepare!
     org_uuid = normalize_uuid(org_id)
     post_uuid = normalize_uuid(post_id)
-    rows = CassandraClient.session.execute(@list, arguments: [org_uuid], consistency: :quorum)
+    rows = CassandraClient.session.execute(@list, arguments: [org_uuid, 1000], consistency: :quorum)
     row = rows.find { |r| r["post_id"] == post_uuid }
     row && row_to_hash(row)
   end
@@ -57,7 +57,7 @@ module OrgPostsRepository
     prepare!
     org_uuid = normalize_uuid(org_id)
     post_uuid = normalize_uuid(post_id)
-    rows = CassandraClient.session.execute(@list, arguments: [org_uuid], consistency: :quorum)
+    rows = CassandraClient.session.execute(@list, arguments: [org_uuid, 1000], consistency: :quorum)
     row = rows.find { |r| r["post_id"] == post_uuid }
     return unless row
     CassandraClient.session.execute(@delete, arguments: [

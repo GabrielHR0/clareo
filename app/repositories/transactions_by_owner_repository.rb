@@ -13,6 +13,7 @@ module TransactionsByOwnerRepository
     SELECT * FROM clareo.transactions_by_owner
     WHERE owner_type = ? AND owner_id = ?
     ORDER BY created_at DESC
+    LIMIT ?
   CQL
 
   def prepare!
@@ -44,11 +45,11 @@ module TransactionsByOwnerRepository
     )
   end
 
-  def find_by_owner(owner_id, owner_type)
+  def find_by_owner(owner_id, owner_type, limit = 100)
     prepare!
     rows = CassandraClient.session.execute(
       @select_by_owner,
-      arguments: [ owner_type.to_s, normalize_uuid(owner_id) ],
+      arguments: [ owner_type.to_s, normalize_uuid(owner_id), limit ],
       consistency: :quorum
     )
     rows.map { |r| row_to_hash(r) }

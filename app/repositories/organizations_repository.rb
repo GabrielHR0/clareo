@@ -9,9 +9,9 @@ module OrganizationsRepository
   CQL
 
   GET_CQL = "SELECT * FROM clareo.organizations WHERE organization_id = ?"
-  ALL_CQL = "SELECT * FROM clareo.organizations"
+  ALL_CQL = "SELECT * FROM clareo.organizations LIMIT ?"
   GET_BY_API_KEY_CQL = "SELECT * FROM clareo.organizations WHERE api_key_hash = ?"
-  FIND_BY_OWNER_CQL = "SELECT * FROM clareo.organizations WHERE owner_user_id = ? ALLOW FILTERING"
+  FIND_BY_OWNER_CQL = "SELECT * FROM clareo.organizations WHERE owner_user_id = ? LIMIT ? ALLOW FILTERING"
 
   def prepare!
     return if @prepared
@@ -52,12 +52,12 @@ module OrganizationsRepository
     Cassandra::Uuid.new(value || SecureRandom.uuid)
   end
 
-  def all(owner_user_id = nil)
+  def all(owner_user_id = nil, limit = 100)
     prepare!
     if owner_user_id
-      rows = CassandraClient.session.execute(@find_by_owner, arguments: [normalize_uuid(owner_user_id)], consistency: :quorum)
+      rows = CassandraClient.session.execute(@find_by_owner, arguments: [normalize_uuid(owner_user_id), limit], consistency: :quorum)
     else
-      rows = CassandraClient.session.execute(@all, consistency: :quorum)
+      rows = CassandraClient.session.execute(@all, arguments: [limit], consistency: :quorum)
     end
     rows.map { |r| row_to_hash(r) }
   end

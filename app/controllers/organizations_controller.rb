@@ -1,6 +1,7 @@
 class OrganizationsController < ApplicationController
   def index
-    organizations = OrganizationsRepository.all(params[:owner_user_id])
+    limit = params[:limit]&.to_i&.clamp(1, 500) || 100
+    organizations = OrganizationsRepository.all(params[:owner_user_id], limit)
     render json: organizations
   end
 

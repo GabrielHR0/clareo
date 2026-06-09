@@ -8,7 +8,7 @@ module CreditBillsRepository
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   CQL
 
-  LIST_CQL = "SELECT * FROM clareo.credit_bills WHERE organization_id = ? ORDER BY bill_id DESC"
+  LIST_CQL = "SELECT * FROM clareo.credit_bills WHERE organization_id = ? ORDER BY bill_id DESC LIMIT ?"
   FIND_CQL = "SELECT * FROM clareo.credit_bills WHERE organization_id = ? AND bill_id = ?"
 
   def prepare!
@@ -40,9 +40,9 @@ module CreditBillsRepository
     id
   end
 
-  def list(organization_id)
+  def list(organization_id, limit = 50)
     prepare!
-    rows = CassandraClient.session.execute(@list, arguments: [normalize_uuid(organization_id)], consistency: :quorum)
+    rows = CassandraClient.session.execute(@list, arguments: [normalize_uuid(organization_id), limit], consistency: :quorum)
     rows.map { |r| row_to_hash(r) }
   end
 
