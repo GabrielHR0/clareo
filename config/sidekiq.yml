@@ -1,0 +1,37 @@
+# Sidekiq configuration for distributed operation.
+# Multiple instances will share these queues via Redis.
+# Each instance can be configured differently via environment variables.
+
+:concurrency: <%= ENV.fetch("SIDEKIQ_CONCURRENCY", 10) %>
+:timeout: <%= ENV.fetch("SIDEKIQ_TIMEOUT", 25) %>
+
+:queues:
+  - [critical, 10]
+  - [events, 7]
+  - [default, 5]
+  - [billing, 5]
+  - [notifications, 3]
+  - [low, 1]
+
+:scheduler:
+  :schedule:
+    credit_repayment_worker:
+      cron: "*/5 * * * *"
+      class: CreditRepaymentWorker
+      queue: billing
+      description: "Apply pending donations to credit lines every 5 minutes"
+    recurring_charge_worker:
+      cron: "0 2 * * *"
+      class: RecurringChargeWorker
+      queue: billing
+      description: "Process recurring donations daily at 02:00"
+    stale_lock_cleanup:
+      cron: "0 */6 * * *"
+      class: StaleLockCleanupWorker
+      queue: low
+      description: "Clean up stale distributed locks every 6 hours"
+    expired_session_cleanup:
+      cron: "0 */12 * * *"
+      class: ExpiredSessionCleanupWorker
+      queue: low
+      description: "Clean up expired session data every 12 hours"

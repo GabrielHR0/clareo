@@ -26,11 +26,21 @@ class ApplicationController < ActionController::API
   end
 
   def authenticate_with_jwt!
-    payload = JwtAuth.decode(bearer_token)
+    token = bearer_token
+    payload = JwtAuth.decode(token)
     return render_unauthorized("Invalid or expired token") unless payload
 
-    @current_user = UsersRepository.find(payload["user_id"])
+    jti = payload[:jti]
+    if jti && TokenBlacklist.blacklisted?(jti)
+      return render_unauthorized("Token has been revoked")
+    end
+
+    @current_user = UsersRepository.find(payload[:user_id])
     render_unauthorized("User not found") unless @current_user
+
+    if jti
+      TokenBlacklist.whitelist!(jti, payload[:exp])
+    end
   end
 
   def authenticate_with_api_key!

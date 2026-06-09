@@ -32,7 +32,7 @@ class ProcessTransactionService
     @transaction_type = transaction_type.to_s
     @idempotency_key = idempotency_key
     @campaign_id = campaign_id
-    @metadata = metadata || {}
+    @metadata = (metadata || {}).transform_keys(&:to_s)
     @dest_owner_type = dest_owner_type && dest_owner_type.to_s
     @dest_owner_id = dest_owner_id
   end
@@ -167,6 +167,11 @@ class ProcessTransactionService
 
   # apply debit/credit/externals to a single wallet with retries
   def apply_single_wallet_flow(tx_id, gateway_resp)
+    # Campaign donations: held in campaign, not credited to wallet
+    if @transaction_type == "credit" && @owner_type == "organization" && @campaign_id
+      return apply_campaign_credit_flow(tx_id, gateway_resp)
+    end
+
     attempts = 0
     while attempts < DEFAULT_RETRIES
       attempts += 1
@@ -429,5 +434,38 @@ class ProcessTransactionService
       sleep(0.05 * attempts)
     end
     false
+  end
+
+  def apply_campaign_credit_flow(tx_id, gateway_resp)
+    capture_resp = FakeBaasGateway.capture(provider_reference: gateway_resp[:provider_reference])
+    record_transaction(tx_id, capture_resp, "captured")
+
+    wallet = WalletsRepository.find(@owner_id, @owner_type)
+    LedgerEntriesByOwnerRepository.insert(
+      owner_type: @owner_type,
+      owner_id: @owner_id,
+      entry_id: SecureRandom.uuid,
+      created_at: Time.now,
+      transaction_id: tx_id,
+      entry_type: "credit",
+      account: "campaign",
+      amount_cents: @amount_cents,
+      balance_after_cents: wallet ? wallet[:balance_cents] : 0,
+      description: "Donation held for campaign #{@campaign_id}"
+    )
+
+    credit_campaign_funds
+
+    { status: :ok, transaction_id: tx_id, provider_reference: gateway_resp[:provider_reference], campaign_id: @campaign_id }
+  end
+
+  def credit_campaign_funds
+    campaign = CampaignsRepository.find(@owner_id, @campaign_id)
+    return unless campaign
+
+    new_raised = (campaign[:raised_cents] || 0) + @amount_cents
+    new_held = (campaign[:held_cents] || 0) + @amount_cents
+    attrs = campaign.merge(raised_cents: new_raised, held_cents: new_held)
+    CampaignsRepository.update(attrs)
   end
 end

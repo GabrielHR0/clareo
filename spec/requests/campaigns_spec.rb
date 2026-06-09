@@ -58,4 +58,64 @@ RSpec.describe "Campaigns", type: :request do
       expect(response).to have_http_status(:not_found)
     end
   end
+
+  describe "PUT /organizations/:org_id/campaigns/:id" do
+    let!(:campaign_id) do
+      post "/organizations/#{org_id}/campaigns", params: valid_params
+      JSON.parse(response.body)["campaign_id"]
+    end
+
+    it "updates name, description and goal_cents" do
+      put "/organizations/#{org_id}/campaigns/#{campaign_id}", params: {
+        campaign: { name: "Novo Nome", description: "Nova descricao", goal_cents: 99999 }
+      }
+      expect(response).to have_http_status(:ok)
+
+      get "/organizations/#{org_id}/campaigns/#{campaign_id}"
+      body = JSON.parse(response.body)
+      expect(body["name"]).to eq("Novo Nome")
+      expect(body["description"]).to eq("Nova descricao")
+      expect(body["goal_cents"]).to eq(99999)
+    end
+
+    it "updates status (activates campaign)" do
+      put "/organizations/#{org_id}/campaigns/#{campaign_id}", params: {
+        campaign: { status: "active" }
+      }
+      expect(response).to have_http_status(:ok)
+
+      get "/organizations/#{org_id}/campaigns/#{campaign_id}"
+      expect(JSON.parse(response.body)["status"]).to eq("active")
+    end
+
+    it "updates tags" do
+      put "/organizations/#{org_id}/campaigns/#{campaign_id}", params: {
+        campaign: { tags: ["tag1", "tag2"] }
+      }
+      expect(response).to have_http_status(:ok)
+
+      get "/organizations/#{org_id}/campaigns/#{campaign_id}"
+      expect(JSON.parse(response.body)["tags"]).to match_array(["tag1", "tag2"])
+    end
+
+    it "does not alter fields not sent in the request" do
+      put "/organizations/#{org_id}/campaigns/#{campaign_id}", params: {
+        campaign: { name: "SoNome" }
+      }
+      expect(response).to have_http_status(:ok)
+
+      get "/organizations/#{org_id}/campaigns/#{campaign_id}"
+      body = JSON.parse(response.body)
+      expect(body["name"]).to eq("SoNome")
+      expect(body["goal_cents"]).to eq(100000)
+      expect(body["status"]).to eq("draft")
+    end
+
+    it "returns 422 for unknown campaign" do
+      put "/organizations/#{org_id}/campaigns/00000000-0000-0000-0000-000000000000", params: {
+        campaign: { name: "Nope" }
+      }
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+  end
 end

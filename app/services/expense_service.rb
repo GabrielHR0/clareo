@@ -1,18 +1,34 @@
+require_relative "../../lib/event_bus"
+
 class ExpenseService
   ValidationError = Class.new(StandardError)
 
+  SENTINEL_CAMPAIGN = "00000000-0000-0000-0000-000000000000"
+
   def self.create(attrs)
     attrs[:entry_id] ||= SecureRandom.uuid
+    attrs[:type] ||= "expense"
     raise ValidationError, "organization_id is required" unless attrs[:organization_id]
-    raise ValidationError, "campaign_id is required" unless attrs[:campaign_id]
     raise ValidationError, "description is required" unless attrs[:description] && !attrs[:description].empty?
-    raise ValidationError, "amount_cents is required" unless attrs[:amount_cents]
-    raise ValidationError, "amount_cents must be positive" unless attrs[:amount_cents].to_i > 0
+    raise ValidationError, "amount_cents is required for expenses" if attrs[:type] == "expense" && !attrs[:amount_cents]
+    raise ValidationError, "amount_cents must be positive" if attrs[:type] == "expense" && attrs[:amount_cents].to_i <= 0
+
+    attrs[:campaign_id] = SENTINEL_CAMPAIGN if attrs[:campaign_id].blank?
 
     org = OrganizationsRepository.find(attrs[:organization_id])
     raise ValidationError, "Organization not found" unless org
 
     ExpenseEntriesRepository.create(attrs)
+
+    EventBus.publish("expense.created", {
+      organization_id: attrs[:organization_id].to_s,
+      campaign_id: attrs[:campaign_id].to_s,
+      entry_id: attrs[:entry_id].to_s,
+      description: attrs[:description],
+      amount_cents: attrs[:amount_cents].to_i,
+      type: attrs[:type] || "expense",
+      timestamp: Time.now.iso8601
+    })
   end
 
   def self.update(org_id, campaign_id, entry_id, attrs)
@@ -45,12 +61,16 @@ class ExpenseService
     campaign = CampaignsRepository.find(org_id, campaign_id)
     return nil unless campaign
 
-    expenses = ExpenseEntriesRepository.list(org_id, campaign_id)
-    total_spent = expenses.sum { |e| e[:amount_cents] || 0 }
+    campaign_expenses = ExpenseEntriesRepository.list(org_id, campaign_id)
+    org_expenses = ExpenseEntriesRepository.list_by_org(org_id)
+    all_expenses = campaign_expenses + org_expenses
+    total_spent = all_expenses.select { |e| e[:type] != "redemption" }.sum { |e| e[:amount_cents] || 0 }
+    total_redemption = all_expenses.select { |e| e[:type] == "redemption" }.sum { |e| e[:amount_cents] || 0 }
     raised = campaign[:raised_cents] || 0
 
-    expenses_with_attachments = expenses.map do |expense|
-      attachments = ExpenseAttachmentsRepository.list(org_id, campaign_id, expense[:entry_id])
+    expenses_with_attachments = all_expenses.map do |expense|
+      e_campaign_id = expense[:campaign_id]
+      attachments = ExpenseAttachmentsRepository.list(org_id, e_campaign_id, expense[:entry_id])
       expense.merge(attachments: attachments)
     end
 
@@ -62,13 +82,16 @@ class ExpenseService
         description: campaign[:description],
         goal_cents: campaign[:goal_cents],
         raised_cents: raised,
+        held_cents: campaign[:held_cents] || 0,
         status: campaign[:status]
       },
       summary: {
         total_raised: raised,
+        total_held: campaign[:held_cents] || 0,
         total_spent: total_spent,
-        balance: raised - total_spent,
-        expense_count: expenses.size
+        total_redemption: total_redemption,
+        balance: raised - total_spent - total_redemption,
+        expense_count: all_expenses.size
       },
       expenses: expenses_with_attachments
     }

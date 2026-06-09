@@ -1,15 +1,13 @@
 class ContributorsController < ApplicationController
   def index
-    contributors = ContributorsRepository.all
+    if params[:organization_id].present?
+      memberships = MembershipsRepository.for_organization(params[:organization_id])
+      contributor_ids = memberships.map { |m| m[:contributor_id] }.compact.uniq
+      contributors = contributor_ids.map { |id| ContributorsRepository.find(id) }.compact
+    else
+      contributors = ContributorsRepository.all
+    end
     render json: contributors
-  end
-
-  def create
-    result = CreateContributorService.call(contributor_params.to_h.symbolize_keys)
-
-    render json: result, status: :created, location: contributor_url(result[:contributor][:contributor_id])
-  rescue StandardError => e
-    render json: { error: e.message }, status: :unprocessable_entity
   end
 
   def show
@@ -19,19 +17,5 @@ class ContributorsController < ApplicationController
     else
       head :not_found
     end
-  end
-
-  private
-
-  def contributor_params
-    params.require(:contributor).permit(
-      :id,
-      :contributor_id,
-      :name,
-      :email,
-      :cpf,
-      :phone,
-      :status
-    )
   end
 end

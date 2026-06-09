@@ -1,3 +1,5 @@
+require_relative "../../lib/event_bus"
+
 class DirectDonationService
   def self.call(organization_id:, contributor_attrs:, amount_cents:, currency: "BRL", payment: {}, idempotency_key: nil, metadata: {})
     new(
@@ -39,6 +41,17 @@ class DirectDonationService
       idempotency_key: tx_key,
       metadata: meta
     )
+
+    if result[:status] == :ok
+      EventBus.publish("donation.created", {
+        organization_id: @organization_id,
+        contributor_id: contributor[:contributor_id].to_s,
+        amount_cents: @amount_cents,
+        currency: @currency,
+        transaction_id: result[:transaction_id],
+        timestamp: Time.now.iso8601
+      })
+    end
 
     {
       status: result[:status],

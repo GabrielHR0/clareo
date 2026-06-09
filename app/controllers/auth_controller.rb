@@ -27,7 +27,19 @@ class AuthController < ApplicationController
 
     UsersRepository.update(user_id, contributor_id: contributor[:contributor_id])
 
-    token = JwtAuth.encode({ user_id: user[:user_id].to_s, email: user[:email] })
+    exp = 24.hours.from_now
+    token = JwtAuth.encode({ user_id: user[:user_id].to_s, email: user[:email] }, exp)
+
+    # Whitelist the token in Redis for distributed auth
+    jti = JwtAuth.extract_jti(token)
+    TokenBlacklist.whitelist!(jti, exp.to_i) if jti
+
+    # Publish event for cross-instance notification
+    EventBus.publish("user.registered", {
+      user_id: user[:user_id].to_s,
+      email: user[:email],
+      name: user[:name]
+    })
 
     render json: {
       user: {
@@ -55,7 +67,12 @@ class AuthController < ApplicationController
     bcrypt = BCrypt::Password.new(user[:password_hash])
     return render json: { error: "Invalid email or password" }, status: :unauthorized unless bcrypt == password
 
-    token = JwtAuth.encode({ user_id: user[:user_id].to_s, email: user[:email] })
+    exp = 24.hours.from_now
+    token = JwtAuth.encode({ user_id: user[:user_id].to_s, email: user[:email] }, exp)
+
+    # Whitelist the token in Redis for distributed auth
+    jti = JwtAuth.extract_jti(token)
+    TokenBlacklist.whitelist!(jti, exp.to_i) if jti
 
     render json: {
       user: {
@@ -65,6 +82,22 @@ class AuthController < ApplicationController
       },
       token: token
     }
+  end
+
+  # Logout: blacklist the current token so it can't be used on any instance.
+  # POST /auth/logout
+  def logout
+    token = bearer_token
+    if token
+      jti = JwtAuth.extract_jti(token)
+      if jti
+        payload = JwtAuth.decode(token)
+        exp = payload ? payload["exp"] : 24.hours.from_now.to_i
+        TokenBlacklist.blacklist!(jti, exp)
+      end
+    end
+
+    head :ok
   end
 
   def me

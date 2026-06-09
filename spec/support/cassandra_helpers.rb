@@ -9,6 +9,14 @@ module CassandraSpecHelpers
     clareo.expense_entries
     clareo.expense_attachments
     clareo.payment_methods
+    clareo.campaigns
+    clareo.campaigns_by_id
+    clareo.campaigns_by_tag
+    clareo.credit_lines
+    clareo.credit_bills
+    clareo.org_posts
+    clareo.post_comments
+    clareo.post_attachments
   ]
 
   def truncate_cassandra!

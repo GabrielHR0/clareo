@@ -5,7 +5,10 @@ class TransactionsController < ApplicationController
     owner_id = params[:owner_id]
     limit = params[:limit]&.to_i || 100
     rows = TransactionsByOwnerRepository.find_by_owner(owner_id, owner_type, limit)
-    render json: rows
+    enriched = rows.map do |tx|
+      enrich_transaction(tx)
+    end
+    render json: enriched
   end
 
   # GET /owners/:owner_type/:owner_id/transactions/:id
@@ -16,7 +19,7 @@ class TransactionsController < ApplicationController
     rows = TransactionsByOwnerRepository.find_by_owner(owner_id, owner_type, 1000)
     tx = rows.find { |r| r[:transaction_id].to_s == tx_id.to_s }
     if tx
-      render json: tx
+      render json: enrich_transaction(tx)
     else
       render json: { error: 'not_found' }, status: :not_found
     end
@@ -71,5 +74,15 @@ class TransactionsController < ApplicationController
 
   def normalize_owner_type(value)
     value.to_s.downcase
+  end
+
+  def enrich_transaction(tx)
+    camp_id = tx[:campaign_id] || tx.dig(:metadata, "campaign_id")
+    if camp_id.present? && camp_id != "00000000-0000-0000-0000-000000000000"
+      org_id = tx[:owner_id]
+      campaign = CampaignsRepository.find(org_id, camp_id) rescue nil
+      tx[:campaign_name] = campaign[:name] if campaign
+    end
+    tx
   end
 end

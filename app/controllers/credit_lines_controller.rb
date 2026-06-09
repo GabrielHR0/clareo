@@ -37,4 +37,36 @@ class CreditLinesController < ApplicationController
       render json: res, status: :conflict
     end
   end
+
+  def request_credit
+    org_id = params.require(:organization_id)
+    requested_cents = params.require(:amount_cents).to_i
+    result = CreditRequestService.request_credit(organization_id: org_id, requested_cents: requested_cents)
+    render json: result, status: :ok
+  rescue ArgumentError => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  end
+
+  def bills
+    org_id = params.require(:organization_id)
+    bills = CreditBillsRepository.list(org_id)
+    render json: bills
+  end
+
+  def pay_bill
+    org_id = params.require(:organization_id)
+    bill_id = params.require(:id)
+    amount = (params[:amount_cents] || params[:amount] || 0).to_i
+    result = CreditBillingService.pay_bill(org_id, bill_id, amount)
+    case result[:status]
+    when :ok
+      render json: result, status: :ok
+    when :not_found
+      render json: result, status: :not_found
+    when :already_paid
+      render json: result, status: :unprocessable_entity
+    else
+      render json: result, status: :unprocessable_entity
+    end
+  end
 end
