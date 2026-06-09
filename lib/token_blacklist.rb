@@ -29,7 +29,7 @@ module TokenBlacklist
 
     # Check if a token has been blacklisted (call on every auth)
     def blacklisted?(jti)
-      $redis.with { |conn| conn.exists("#{BLACKLIST_PREFIX}#{jti}") }
+      $redis.with { |conn| conn.exists("#{BLACKLIST_PREFIX}#{jti}") == 1 }
     end
 
     # Whitelist a token (call on login/register)
@@ -44,7 +44,7 @@ module TokenBlacklist
 
     # Check if a token is whitelisted (optional, for extra security)
     def whitelisted?(jti)
-      $redis.with { |conn| conn.exists("#{WHITELIST_PREFIX}#{jti}") }
+      $redis.with { |conn| conn.exists("#{WHITELIST_PREFIX}#{jti}") == 1 }
     end
 
     # Remove expired entries (called periodically or on startup)

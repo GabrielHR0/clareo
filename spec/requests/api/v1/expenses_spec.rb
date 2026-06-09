@@ -32,7 +32,6 @@ RSpec.describe 'Expenses', type: :request do
 
       response 201, 'Expense created' do
         let(:organization_id) { org_id }
-        let(:campaign_id) { campaign_id }
         let(:expense) { { expense: { description: 'Swagger expense', amount_cents: 5000, expense_date: '2026-06-01' } } }
         run_test!
       end
@@ -46,9 +45,9 @@ RSpec.describe 'Expenses', type: :request do
 
       response 200, 'List of expenses' do
         let(:organization_id) { org_id }
-        let(:campaign_id) { campaign_id }
         run_test!
       end
     end
   end
+
 end

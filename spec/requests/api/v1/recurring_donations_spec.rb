@@ -29,6 +29,12 @@ RSpec.describe 'RecurringDonations', type: :request do
       response 201, 'Recurring donation created' do
         let(:contributor_id) { contrib_id }
         let(:recurring_donation) { { recurring_donation: { organization_id: org_id, amount_cents: 5000, interval_days: 30, payment_method: 'wallet' } } }
+
+        before do
+          ContributorsRepository.create(contributor_id: contrib_id, name: 'Swagger Contributor')
+          OrganizationsRepository.create(organization_id: org_id, name: 'Swagger Org')
+        end
+
         run_test!
       end
     end

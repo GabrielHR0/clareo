@@ -1,8 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe "RecurringDonations", type: :request do
-  let(:org_id) { "72f0ded1-11b4-471a-9a91-e2ce7ffb1c66" }
-  let(:contrib_id) { "e05201ae-290a-48c8-8972-dbc3cd85fd90" }
+  let(:org_id) { SecureRandom.uuid }
+  let(:contrib_id) { SecureRandom.uuid }
+
+  before do
+    OrganizationsRepository.create(organization_id: org_id, name: "Recurring Donations Org", status: "active")
+    ContributorsRepository.create(contributor_id: contrib_id, name: "Recurring Donor", email: "donor@example.com")
+  end
 
   let(:valid_params) do
     {

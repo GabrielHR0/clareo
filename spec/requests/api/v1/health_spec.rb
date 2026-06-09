@@ -28,6 +28,10 @@ RSpec.describe 'Health Endpoints', type: :request do
       end
 
       response 503, 'Cassandra is not healthy' do
+        before do |example|
+          allow(CassandraClient.session).to receive(:execute).and_raise(StandardError.new("Cassandra connection failed"))
+        end
+
         example :json, :get_cassandra_health_503, {
           status: 'error',
           message: 'Cassandra connection failed'
@@ -50,6 +54,10 @@ RSpec.describe 'Health Endpoints', type: :request do
       end
 
       response 503, 'Redis is not healthy' do
+        before do |example|
+          allow(Redis).to receive(:new).and_raise(Redis::CannotConnectError, "Redis connection failed")
+        end
+
         example :json, :get_redis_health_503, {
           status: 'error',
           message: 'Redis connection failed'
@@ -73,6 +81,10 @@ RSpec.describe 'Health Endpoints', type: :request do
       end
 
       response 503, 'Some service unhealthy' do
+        before do |example|
+          allow(Redis).to receive(:new).and_raise(Redis::CannotConnectError, "Redis connection failed")
+        end
+
         example :json, :get_all_health_503, {
           cassandra: { status: 'ok' },
           redis: { status: 'error', message: 'Redis connection failed' }

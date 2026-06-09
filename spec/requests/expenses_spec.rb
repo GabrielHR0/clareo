@@ -1,8 +1,9 @@
 require 'rails_helper'
 
 RSpec.describe "Expenses", type: :request do
-  let(:org_id) { "72f0ded1-11b4-471a-9a91-e2ce7ffb1c66" }
+  let(:org_id) { SecureRandom.uuid }
   let(:campaign_id) do
+    OrganizationsRepository.create(organization_id: org_id, name: "Expense Spec Org", status: "active")
     post "/organizations/#{org_id}/campaigns", params: {
       campaign: { name: "Expense Spec Campaign", goal_cents: 100000 }
     }

@@ -178,7 +178,7 @@ RSpec.describe 'Transactions', type: :request do
             currency: 'BRL',
             transaction_type: 'credit',
             status: 'captured',
-            idempotency_key: 'campaign1-demo-'550e8400-e29b-41d4-a716-446655440000',
+            idempotency_key: 'campaign1-demo-550e8400-e29b-41d4-a716-446655440000',
             external_reference: 'fake_b9c57887-ab58-461c-bbf0-688bc9125eb4',
             metadata: nil
           }

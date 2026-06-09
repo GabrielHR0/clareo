@@ -29,6 +29,8 @@ class ExpenseService
       type: attrs[:type] || "expense",
       timestamp: Time.now.iso8601
     })
+
+    attrs
   end
 
   def self.update(org_id, campaign_id, entry_id, attrs)
