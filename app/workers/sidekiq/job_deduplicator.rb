@@ -18,7 +18,7 @@ module Sidekiq
       # Skip deduplication for scheduled/cron jobs
       if job["cron"] || job["at"]
         yield
-        next
+        return
       end
 
       # Build dedup key from class name and arguments
