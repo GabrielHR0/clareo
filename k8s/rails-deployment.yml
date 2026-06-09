@@ -12,10 +12,35 @@ spec:
       labels:
         app: rails
     spec:
+      imagePullSecrets:
+        - name: do-registry
+      initContainers:
+        - name: wait-for-cassandra
+          image: docker.io/library/ruby:3.2-slim
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "Aguardando Cassandra em ${CASSANDRA_CONTACT_POINTS}:${CASSANDRA_PORT}..."
+              for i in $(seq 1 60); do
+                if ruby -rsocket -e "TCPSocket.new(ENV['CASSANDRA_CONTACT_POINTS'], ENV['CASSANDRA_PORT'].to_i).close" 2>/dev/null; then
+                  echo "Cassandra está acessível!"
+                  exit 0
+                fi
+                echo "Tentativa $i/60 - aguardando 2s..."
+                sleep 2
+              done
+              echo "Timeout aguardando Cassandra"
+              exit 1
+          env:
+            - name: CASSANDRA_CONTACT_POINTS
+              value: "meu-cassandra"
+            - name: CASSANDRA_PORT
+              value: "9042"
       containers:
         - name: rails
-          image: docker.io/library/clareo:latest
-          imagePullPolicy: IfNotPresent
+          image: registry.digitalocean.com/clareo-registry/clareo:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
               name: http
@@ -28,11 +53,20 @@ spec:
                   name: rails-secret
                   key: SECRET_KEY_BASE
             - name: CASSANDRA_CONTACT_POINTS
-              value: "cassandra"
+              value: "meu-cassandra"
             - name: CASSANDRA_PORT
               value: "9042"
             - name: CASSANDRA_KEYSPACE
               value: "clareo"
+            - name: CASSANDRA_USERNAME
+              value: "admin"
+            - name: CASSANDRA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cassandra-auth
+                  key: password
+            - name: CASSANDRA_DC
+              value: "datacenter1"
             - name: REDIS_URL
               value: "redis://redis:6379/0"
           readinessProbe:

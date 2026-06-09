@@ -1,0 +1,59 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cassandra-alerts
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+  - name: cassandra
+    rules:
+    - alert: CassandraDown
+      expr: up{job="cassandra-monitor"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Cassandra node down"
+        description: "Cassandra node {{ $labels.instance }} has been down for more than 1 minute"
+    - alert: CassandraHighHeapUsage
+      expr: (jvm_memory_bytes_used{area="heap", job="cassandra-monitor"} / jvm_memory_bytes_max{area="heap", job="cassandra-monitor"}) > 0.85
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Cassandra high heap usage"
+        description: "Cassandra heap usage is above 85% on {{ $labels.instance }}"
+    - alert: CassandraHighLatency
+      expr: histogram_quantile(0.99, rate(cassandra_db_read_latency_seconds_bucket{job="cassandra-monitor"}[5m])) > 0.5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Cassandra high read latency"
+        description: "Cassandra p99 read latency is above 500ms on {{ $labels.instance }}"
+    - alert: CassandraHighWriteLatency
+      expr: histogram_quantile(0.99, rate(cassandra_db_write_latency_seconds_bucket{job="cassandra-monitor"}[5m])) > 0.5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Cassandra high write latency"
+        description: "Cassandra p99 write latency is above 500ms on {{ $labels.instance }}"
+    - alert: CassandraHighCompactionPending
+      expr: cassandra_compaction_pending_tasks{job="cassandra-monitor"} > 100
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Cassandra high compaction pending tasks"
+        description: "Cassandra has {{ $value }} pending compaction tasks on {{ $labels.instance }}"
+    - alert: CassandraStorageSpaceLow
+      expr: (cassandra_storage_total_bytes{job="cassandra-monitor"} - cassandra_storage_free_bytes{job="cassandra-monitor"}) / cassandra_storage_total_bytes{job="cassandra-monitor"} > 0.85
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Cassandra storage space low"
+        description: "Cassandra storage usage is above 85% on {{ $labels.instance }}"

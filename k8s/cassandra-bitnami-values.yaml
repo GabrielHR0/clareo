@@ -1,0 +1,82 @@
+# Valores para instalar Cassandra via Bitnami Helm Chart no DOKS
+# Uso: helm install meu-cassandra bitnami/cassandra -f k8s/cassandra-bitnami-values.yaml
+
+clusterName: "clareo"
+numNodes: 3
+
+# Imagem Cassandra (tag válida do Bitnami)
+image:
+  registry: docker.io
+  repository: bitnami/cassandra
+  tag: "4.1"
+  pullPolicy: IfNotPresent
+
+auth:
+  enabled: true
+  username: "admin"
+  password: "senha_secreta_cassandra"
+  # Para produção, use secrets externos:
+  # existingSecret: "cassandra-auth"
+
+cassandra:
+  # Configuração de recursos para nós com 4GB RAM / 2 vCPUs
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+  # JVM options otimizados para 4GB RAM
+  jvmOptions:
+    - "-Xms1g"
+    - "-Xmx1g"
+    - "-XX:+UseG1GC"
+    - "-XX:MaxGCPauseMillis=200"
+
+  # Configuração de rede
+  rpcAddress: "0.0.0.0"
+  broadcastRpcAddress: "auto"
+
+  # Persistence
+  persistence:
+    enabled: true
+    storageClass: "do-block-storage"  # DigitalOcean Block Storage
+    size: 20Gi
+
+  # Configurações de seed e cluster
+  seeds: ""
+  autoBootstrap: true
+
+  # Configurações de rede do Kubernetes
+  service:
+    type: ClusterIP
+    port: 9042
+    clusterIP: ""
+
+# Configuração do metrics sidecar (opcional)
+metrics:
+  enabled: false
+
+# Configuração do sidecar para backup (opcional)
+backup:
+  enabled: false
+
+# Anti-affinity para distribuir pods entre os 3 nós
+antiAffinity: "hard"
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Security context
+securityContext:
+  enabled: true
+  fsGroup: 1001
+  runAsUser: 1001
+
+# Configuração de TLS (desabilitado para simplicidade, habilite em produção)
+tls:
+  enabled: false

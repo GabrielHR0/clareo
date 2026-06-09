@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cassandra-jvm-config
+data:
+  jvm-server.options: |
+    # JVM options for Cassandra 4.1 on newer JDKs
+    --add-opens java.base/jdk.internal.ref=ALL-UNNAMED
+    --add-opens java.base/java.lang=ALL-UNNAMED
+    --add-opens java.base/java.nio=ALL-UNNAMED
+    --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+    --add-opens java.management/sun.management=ALL-UNNAMED
+    --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
+    -Xms1g
+    -Xmx1g
+    -XX:+UseG1GC
+    -XX:MaxGCPauseMillis=200
+
+    # JMX Remote Configuration
+    -Dcom.sun.management.jmxremote
+    -Dcom.sun.management.jmxremote.port=7199
+    -Dcom.sun.management.jmxremote.rmi.port=7199
+    -Dcom.sun.management.jmxremote.local.only=false
+    -Dcom.sun.management.jmxremote.authenticate=false
+    -Dcom.sun.management.jmxremote.ssl=false
+    -Djava.rmi.server.hostname=localhost
+
+    # Prometheus JMX Exporter as Java Agent
+    -javaagent:/etc/cassandra/jmx_prometheus_javaagent.jar=9404:/etc/cassandra/jmx_exporter_config.yml

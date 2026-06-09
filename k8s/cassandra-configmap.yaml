@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cassandra-config
+data:
+  cassandra.yaml: |
+    cluster_name: 'clareo'
+    num_tokens: 16
+    hinted_handoff_enabled: true
+    max_hint_window_in_ms: 10800000
+    hinted_handoff_throttle_in_kb: 1024
+    max_hints_delivery_threads: 2
+    authenticator: PasswordAuthenticator
+    authorizer: CassandraAuthorizer
+    role_manager: CassandraRoleManager
+    roles_validity_in_ms: 2000
+    permissions_validity_in_ms: 2000
+    credentials_validity_in_ms: 2000
+    partitioner: org.apache.cassandra.dht.Murmur3Partitioner
+    data_file_directories:
+      - /var/lib/cassandra/data
+    commitlog_directory: /var/lib/cassandra/commitlog
+    cdc_enabled: false
+    disk_failure_policy: stop
+    commit_failure_policy: stop
+    prepared_statements_cache_size_mb: 128
+    key_cache_size_in_mb: 100
+    row_cache_size_in_mb: 0
+    counter_cache_size_in_mb: 50
+    saved_caches_directory: /var/lib/cassandra/saved_caches
+    commitlog_sync: periodic
+    commitlog_sync_period_in_ms: 10000
+    commitlog_segment_size_in_mb: 32
+    seed_provider:
+      - class_name: org.apache.cassandra.locator.SimpleSeedProvider
+        parameters:
+          - seeds: "meu-cassandra-0.meu-cassandra"
+    concurrent_reads: 32
+    concurrent_writes: 32
+    concurrent_counter_writes: 32
+    memtable_allocation_type: heap_buffers
+    index_summary_capacity_in_mb: 256
+    index_summary_resize_interval_in_minutes: 60
+    trickle_fsync: false
+    trickle_fsync_interval_in_kb: 10240
+    storage_port: 7000
+    ssl_storage_port: 7001
+    listen_address: auto
+    start_native_transport: true
+    native_transport_port: 9042
+    rpc_address: 0.0.0.0
+    broadcast_rpc_address: auto
+    rpc_keepalive: true
+    incremental_backups: false
+    snapshot_before_compaction: false
+    auto_snapshot: true
+    tombstone_warn_threshold: 1000
+    tombstone_failure_threshold: 100000
+    column_index_size_in_kb: 64
+    column_index_cache_size_in_kb: 2
+    streaming_keep_alive_period_in_secs: 300
+    phi_convict_threshold: 8
+    dynamic_snitch_update_interval_in_ms: 100
+    dynamic_snitch_reset_interval_in_ms: 600000
+    dynamic_snitch_badness_threshold: 0.1
+    endpoint_snitch: GossipingPropertyFileSnitch
+    compaction_throughput_mb_per_sec: 16
+    compaction_large_partition_warning_threshold_mb: 100
+    sstable_preemptive_open_interval_in_mb: 50
+    batch_size_warn_threshold_in_kb: 64
+    batch_size_fail_threshold_in_kb: 640
+    unlogged_batch_across_partitions_warn_threshold: 10
+    cdc_total_space_in_mb: 4096
+    cdc_free_space_check_interval_ms: 250
+    audit_logging_options:
+      enabled: false
+  cassandra-rackdc.properties: |
+    dc=datacenter1
+    rack=rack1

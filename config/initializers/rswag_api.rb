@@ -1,3 +1,5 @@
-Rswag::Api.configure do |c|
-  c.openapi_root = Rails.root.to_s + '/swagger'
+if defined?(Rswag::Api)
+  Rswag::Api.configure do |c|
+    c.openapi_root = Rails.root.to_s + '/swagger'
+  end
 end

@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cassandra-jmx-exporter-config
+data:
+  config.yml: |
+    hostPort: localhost:7199
+    lowercaseOutputName: true
+    lowercaseOutputLabelNames: true
+    rules:
+    - pattern: 'org.apache.cassandra.metrics.<domain_name>.(<name>)(.*)'
+      name: cassandra_$1
+      labels:
+        domain: "$1"
+    - pattern: 'org.apache.cassandra.metrics.<domain_name>.(<name>)'
+      name: cassandra_$1
+      labels:
+        domain: "$1"
+    - pattern: 'org.apache.cassandra.net.<type>.(<name>)'
+      name: cassandra_net_$1
+      labels:
+        type: "$1"
+    - pattern: 'org.apache.cassandra.db.<type>.(<name>)'
+      name: cassandra_db_$1
+      labels:
+        type: "$1"
+    - pattern: 'org.apache.cassandra.service.<type>.(<name>)'
+      name: cassandra_service_$1
+      labels:
+        type: "$1"
+    - pattern: 'org.apache.cassandra.concurrent.<type>.(<name>)'
+      name: cassandra_concurrent_$1
+      labels:
+        type: "$1"
+    - pattern: 'org.apache.cassandra.streaming.<type>.(<name>)'
+      name: cassandra_streaming_$1
+      labels:
+        type: "$1"

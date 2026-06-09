@@ -30,24 +30,28 @@ docker save -o ${TMP_TAR} ${IMAGE_NAME}
 sudo k3s ctr images import ${TMP_TAR}
 rm -f ${TMP_TAR}
 
-echo "5/8: Aplicando manifests Kubernetes"
-kubectl apply -f k8s/cassandra-statefulset.yml
-kubectl apply -f k8s/redis-deployment.yml
-kubectl apply -f k8s/rails-deployment.yml
-kubectl apply -f k8s/nginx-deployment.yml
-kubectl apply -f k8s/cassandra-autoscaler.yaml
+echo "5/8: Criando secrets necessários"
+# Secret para autenticação Cassandra (Bitnami Helm usa admin/senha_secreta_cassandra)
+kubectl create secret generic cassandra-auth \
+  --from-literal=password=senha_secreta_cassandra \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 echo "6/8: Criando SECRET_KEY_BASE para Rails"
 kubectl create secret generic rails-secret \
   --from-literal=SECRET_KEY_BASE=$(openssl rand -hex 64) \
   --dry-run=client -o yaml | kubectl apply -f -
 
-echo "7/8: Aguardando pods ficarem prontos"
-echo "  Cassandra StatefulSet pode levar até 2 minutos..."
-kubectl wait --for=condition=ready pod -l app=cassandra --timeout=300s 2>/dev/null || true
+echo "7/8: Aplicando manifests Kubernetes"
+kubectl apply -f k8s/redis-deployment.yml
+kubectl apply -f k8s/rails-deployment.yml
+kubectl apply -f k8s/nginx-deployment.yml
+kubectl apply -f k8s/cassandra-autoscaler.yaml
+
+echo "8/8: Aguardando pods ficarem prontos"
+echo "  Cassandra (via Bitnami Helm) pode levar até 2 minutos..."
 kubectl wait --for=condition=ready pod -l app=rails --timeout=120s 2>/dev/null || true
 
-echo "8/8: Deploy concluído!"
+echo "9/9: Deploy concluído!"
 echo ""
 echo "================================================"
 echo "  Status do cluster"

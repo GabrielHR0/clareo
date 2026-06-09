@@ -1,10 +1,12 @@
 Rails.application.routes.draw do
   get '/api-docs/swagger.json', to: 'swagger#show', defaults: { format: :json }
 
-  # Swagger/OpenAPI Documentation
-  mount Rswag::Ui::Engine => '/api-docs'
-  mount Rswag::Api::Engine => '/api-docs'
-  get '/api-docs' => redirect('/api-docs/index.html')
+  # Swagger/OpenAPI Documentation (only in development/test)
+  if defined?(Rswag::Ui) && defined?(Rswag::Api)
+    mount Rswag::Ui::Engine => '/api-docs'
+    mount Rswag::Api::Engine => '/api-docs'
+    get '/api-docs' => redirect('/api-docs/index.html')
+  end
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

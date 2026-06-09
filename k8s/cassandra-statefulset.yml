@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: cassandra
+  name: meu-cassandra
   labels:
     app: cassandra
 spec:
@@ -10,16 +10,18 @@ spec:
   ports:
     - port: 9042
       name: cql
+    - port: 9404
+      name: jmx-exporter
   selector:
     app: cassandra
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: cassandra
+  name: meu-cassandra
 spec:
-  serviceName: cassandra
-  replicas: 2
+  serviceName: meu-cassandra
+  replicas: 3
   podManagementPolicy: Parallel
   updateStrategy:
     type: RollingUpdate
@@ -32,8 +34,31 @@ spec:
     metadata:
       labels:
         app: cassandra
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9404"
+        prometheus.io/path: "/metrics"
     spec:
       terminationGracePeriodSeconds: 120
+      initContainers:
+        - name: config-init
+          image: curlimages/curl:8.8.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              cp /config/cassandra.yaml /etc/cassandra/cassandra.yaml &&
+              cp /config/cassandra-rackdc.properties /etc/cassandra/cassandra-rackdc.properties &&
+              cp /jvm-config/jvm-server.options /etc/cassandra/jvm-server.options &&
+              # Download JMX Prometheus Java Agent
+              curl -sL -o /etc/cassandra/jmx_prometheus_javaagent.jar https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar &&
+              curl -sL -o /etc/cassandra/jmx_exporter_config.yml https://raw.githubusercontent.com/prometheus/jmx_exporter/main/example_configs/cassandra.yml
+          volumeMounts:
+            - name: cassandra-config
+              mountPath: /config
+            - name: cassandra-jvm-config
+              mountPath: /jvm-config
+            - name: cassandra-config-writable
+              mountPath: /etc/cassandra
       containers:
         - name: cassandra
           image: cassandra:4.1
@@ -42,6 +67,8 @@ spec:
               name: cql
             - containerPort: 7000
               name: intra
+            - containerPort: 9404
+              name: jmx-exporter
           env:
             - name: CASSANDRA_CLUSTER_NAME
               value: "clareo"
@@ -50,32 +77,44 @@ spec:
             - name: CASSANDRA_RACK
               value: "rack1"
             - name: CASSANDRA_SEEDS
-              value: "cassandra-0.cassandra"
+              value: "meu-cassandra-0.meu-cassandra"
+            - name: CASSANDRA_CONFIG
+              value: "/etc/cassandra/cassandra.yaml"
           readinessProbe:
             exec:
-              command: ["/bin/sh", "-c", "cqlsh -e 'describe cluster' || exit 1"]
+              command: ["/bin/sh", "-c", "cqlsh -u admin -p senha_secreta_cassandra -e 'describe cluster' || exit 1"]
             initialDelaySeconds: 60
             periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 6
           livenessProbe:
             exec:
-              command: ["/bin/sh", "-c", "cqlsh -e 'select now() from system.local' >/dev/null 2>&1 || exit 1"]
+              command: ["/bin/sh", "-c", "cqlsh -u admin -p senha_secreta_cassandra -e 'select now() from system.local' >/dev/null 2>&1 || exit 1"]
             initialDelaySeconds: 120
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 6
-            failureThreshold: 6
           resources:
             requests:
-              cpu: "250m"
-              memory: "512Mi"
+              cpu: "500m"
+              memory: "1Gi"
             limits:
               cpu: "1"
-              memory: "1Gi"
+              memory: "2Gi"
           volumeMounts:
             - name: cassandra-data
               mountPath: /var/lib/cassandra
+            - name: cassandra-config-writable
+              mountPath: /etc/cassandra
+      volumes:
+        - name: cassandra-config
+          configMap:
+            name: cassandra-config
+        - name: cassandra-jvm-config
+          configMap:
+            name: cassandra-jvm-config
+        - name: cassandra-config-writable
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: cassandra-data
@@ -83,7 +122,7 @@ spec:
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 5Gi
+            storage: 20Gi
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget

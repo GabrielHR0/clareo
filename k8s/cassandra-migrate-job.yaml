@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cassandra-migrate
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: registry.digitalocean.com/clareo-registry/clareo:latest
+          command: ["bin/rails", "cassandra:migrate"]
+          env:
+            - name: RAILS_ENV
+              value: "production"
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: rails-secret
+                  key: SECRET_KEY_BASE
+            - name: CASSANDRA_CONTACT_POINTS
+              value: "meu-cassandra"
+            - name: CASSANDRA_PORT
+              value: "9042"
+            - name: CASSANDRA_KEYSPACE
+              value: "clareo"
+            - name: CASSANDRA_USERNAME
+              value: "admin"
+            - name: CASSANDRA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cassandra-auth
+                  key: password
+            - name: CASSANDRA_DC
+              value: "datacenter1"
+            - name: REDIS_URL
+              value: "redis://redis:6379/0"
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: do-registry
+  backoffLimit: 3

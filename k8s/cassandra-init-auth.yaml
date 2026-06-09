@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cassandra-init-auth
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: cqlsh
+          image: cassandra:4.1
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "Aguardando Cassandra ficar pronto..."
+              for i in $(seq 1 60); do
+                if cqlsh meu-cassandra-0.meu-cassandra -u cassandra -p cassandra -e "SELECT now() FROM system.local" >/dev/null 2>&1; then
+                  echo "Cassandra está pronto!"
+                  break
+                fi
+                echo "Tentativa $i/60 - aguardando 5s..."
+                sleep 5
+              done
+              
+              echo "Criando usuário admin..."
+              cqlsh meu-cassandra-0.meu-cassandra -u cassandra -p cassandra -e "
+                CREATE ROLE IF NOT EXISTS admin WITH PASSWORD = 'senha_secreta_cassandra' AND LOGIN = true AND SUPERUSER = true;
+              "
+              
+              echo "Alterando senha do usuário cassandra padrão (opcional)..."
+              cqlsh meu-cassandra-0.meu-cassandra -u cassandra -p cassandra -e "
+                ALTER ROLE cassandra WITH PASSWORD = 'senha_secreta_cassandra';
+              " || true
+              
+              echo "Verificando usuários criados:"
+              cqlsh meu-cassandra-0.meu-cassandra -u admin -p senha_secreta_cassandra -e "SELECT role, can_login, is_superuser FROM system_auth.roles;"
+              
+              echo "Autenticação configurada com sucesso!"
+  backoffLimit: 3
