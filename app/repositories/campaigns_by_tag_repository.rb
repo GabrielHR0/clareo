@@ -8,8 +8,8 @@ module CampaignsByTagRepository
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   CQL
 
-  LIST_CQL = "SELECT * FROM clareo.campaigns_by_tag WHERE tag = ? LIMIT ?"
-  LIST_ALL_CQL = "SELECT * FROM clareo.campaigns_by_tag LIMIT ? ALLOW FILTERING"
+  LIST_CQL = "SELECT * FROM clareo.campaigns_by_tag WHERE tag = ?"
+  LIST_ALL_CQL = "SELECT * FROM clareo.campaigns_by_tag ALLOW FILTERING"
   DELETE_CQL = "DELETE FROM clareo.campaigns_by_tag WHERE tag = ? AND campaign_id = ?"
 
   def prepare!
@@ -37,9 +37,9 @@ module CampaignsByTagRepository
     ], consistency: :quorum)
   end
 
-  def list_by_tag(tag, limit = 50)
+  def list_by_tag(tag)
     prepare!
-    rows = CassandraClient.session.execute(@list, arguments: [tag, limit], consistency: :quorum)
+    rows = CassandraClient.session.execute(@list, arguments: [tag], consistency: :quorum)
     rows.map { |r| row_to_hash(r) }
   end
 
@@ -48,9 +48,9 @@ module CampaignsByTagRepository
     CassandraClient.session.execute(@delete, arguments: [tag, normalize_uuid(campaign_id)], consistency: :quorum)
   end
 
-  def list_all(limit = 100)
+  def list_all
     prepare!
-    rows = CassandraClient.session.execute(@list_all, arguments: [limit], consistency: :quorum)
+    rows = CassandraClient.session.execute(@list_all, consistency: :quorum)
     rows.map { |r| row_to_hash(r) }
   end
 

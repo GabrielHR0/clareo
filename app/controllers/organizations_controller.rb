@@ -1,6 +1,6 @@
 class OrganizationsController < ApplicationController
   def index
-    organizations = OrganizationsRepository.all
+    organizations = OrganizationsRepository.all(params[:owner_user_id])
     render json: organizations
   end
 

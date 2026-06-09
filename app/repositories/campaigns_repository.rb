@@ -10,7 +10,7 @@ module CampaignsRepository
   CQL
 
   GET_CQL = "SELECT * FROM clareo.campaigns WHERE organization_id = ? AND campaign_id = ?"
-  LIST_CQL = "SELECT * FROM clareo.campaigns WHERE organization_id = ? LIMIT ?"
+  LIST_CQL = "SELECT * FROM clareo.campaigns WHERE organization_id = ?"
   UPDATE_CQL = <<~CQL
     UPDATE clareo.campaigns SET
       name = ?, description = ?, goal_cents = ?, raised_cents = ?, held_cents = ?,
@@ -114,10 +114,10 @@ module CampaignsRepository
     end
   end
 
-  def list(org_id, limit = 100)
+  def list(org_id)
     prepare!
     rows = CassandraClient.session.execute(@list, arguments: [
-      normalize_uuid(org_id), limit
+      normalize_uuid(org_id)
     ], consistency: :quorum)
     rows.map { |r| row_to_hash(r) }
   end

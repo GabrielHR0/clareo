@@ -6,7 +6,7 @@ module PostCommentsRepository
     VALUES (?, ?, ?, ?, ?, ?, ?)
   CQL
 
-  LIST_CQL = "SELECT * FROM clareo.post_comments WHERE post_id = ? LIMIT ?"
+  LIST_CQL = "SELECT * FROM clareo.post_comments WHERE post_id = ?"
   DELETE_CQL = "DELETE FROM clareo.post_comments WHERE post_id = ? AND created_at = ? AND comment_id = ?"
 
   def prepare!
@@ -35,10 +35,10 @@ module PostCommentsRepository
     { comment_id: comment_id.to_s, post_id: post_id.to_s }
   end
 
-  def list(post_id, limit = 50)
+  def list(post_id)
     prepare!
     rows = CassandraClient.session.execute(@list, arguments: [
-      normalize_uuid(post_id), limit
+      normalize_uuid(post_id)
     ], consistency: :quorum)
     rows.map { |r| row_to_hash(r) }
   end
@@ -47,7 +47,7 @@ module PostCommentsRepository
     prepare!
     post_uuid = normalize_uuid(post_id)
     comment_uuid = normalize_uuid(comment_id)
-    rows = CassandraClient.session.execute(@list, arguments: [post_uuid, 1000], consistency: :quorum)
+    rows = CassandraClient.session.execute(@list, arguments: [post_uuid], consistency: :quorum)
     row = rows.find { |r| r["comment_id"] == comment_uuid }
     row && row_to_hash(row)
   end
@@ -56,7 +56,7 @@ module PostCommentsRepository
     prepare!
     post_uuid = normalize_uuid(post_id)
     comment_uuid = normalize_uuid(comment_id)
-    rows = CassandraClient.session.execute(@list, arguments: [post_uuid, 1000], consistency: :quorum)
+    rows = CassandraClient.session.execute(@list, arguments: [post_uuid], consistency: :quorum)
     row = rows.find { |r| r["comment_id"] == comment_uuid }
     return unless row
     CassandraClient.session.execute(@delete, arguments: [
